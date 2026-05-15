@@ -1,7 +1,7 @@
 import { GoogleGenAI } from "@google/genai";
 
 const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
-
+console.log("API KEY:", import.meta.env.VITE_GEMINI_API_KEY);
 // 🔥 sécurité (évite écran blanc si clé manquante)
 if (!apiKey) {
   throw new Error("VITE_GEMINI_API_KEY is missing in .env file");
@@ -19,7 +19,7 @@ export async function getCoachFeedback(stats: any, targetedMoves?: string[]) {
         : "";
 
     const response = await ai.models.generateContent({
-      model: "gemini-3-flash-preview",
+      model: "gemini-1.5-flash",
       contents: `
 Tu es un coach de basket expert assisté par IA.
 Analyse ces statistiques et donne 3 conseils précis en français.${targetedContext}
@@ -55,7 +55,7 @@ Réponds UNIQUEMENT en JSON :
 export async function generatePostMatchAnalysis(sessionData: any) {
   try {
     const response = await ai.models.generateContent({
-      model: "gemini-3-flash-preview",
+      model: "gemini-1.5-flash",
       contents: `
 Analyse cette session de basketball :
 
@@ -89,7 +89,7 @@ Réponds UNIQUEMENT en JSON :
 export async function getBasketballNews() {
   try {
     const response = await ai.models.generateContent({
-      model: "gemini-3-flash-preview",
+      model: "gemini-1.5-flash",
       contents:
         "Donne 3 actualités importantes du basketball (NBA, Euroleague) en français.",
       config: {
