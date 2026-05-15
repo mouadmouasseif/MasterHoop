@@ -3,16 +3,17 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
-"scripts": {
-  "dev": "vite --port=3000 --host=0.0.0.0",
-  "build": "tsc && vite build",
-  "preview": "vite preview",
-  "clean": "rm -rf dist",
-  "lint": "tsc --noEmit",
-  "test": "echo \"No tests yet\""
-},
+  "scripts": {
+    "dev": "vite --port=3000 --host=0.0.0.0",
+    "build": "tsc && vite build",
+    "preview": "vite preview",
+    "clean": "rm -rf dist",
+    "lint": "tsc --noEmit",
+    "test": "echo \"No tests yet\""
+  },
   "dependencies": {
     "@google/genai": "^1.29.0",
+    "@react-oauth/google": "^0.13.5",
     "@tailwindcss/vite": "^4.1.14",
     "@tensorflow-models/coco-ssd": "^2.2.3",
     "@tensorflow-models/pose-detection": "^2.1.3",

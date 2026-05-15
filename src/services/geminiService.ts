@@ -1,22 +1,28 @@
-/**
- * @license
- * SPDX-License-Identifier: Apache-2.0
- */
-
 import { GoogleGenAI } from "@google/genai";
 
+const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
+
+// 🔥 sécurité (évite écran blanc si clé manquante)
+if (!apiKey) {
+  throw new Error("VITE_GEMINI_API_KEY is missing in .env file");
+}
+
 const ai = new GoogleGenAI({
-  apiKey: import.meta.env.VITE_GEMINI_API_KEY,
+  apiKey,
 });
+
 export async function getCoachFeedback(stats: any, targetedMoves?: string[]) {
   try {
-    const targetedContext = targetedMoves && targetedMoves.length > 0 
-      ? `\nFocus spécifique sur ces mouvements : ${targetedMoves.join(', ')}. Donne des conseils ultra-spécifiques pour les améliorer.`
-      : '';
+    const targetedContext =
+      targetedMoves?.length > 0
+        ? `\nFocus spécifique sur ces mouvements : ${targetedMoves.join(", ")}. Donne des conseils ultra-spécifiques.`
+        : "";
 
     const response = await ai.models.generateContent({
       model: "gemini-3-flash-preview",
-      contents: `Tu es un coach de basket expert assisté par IA. Analyse ces statistiques de session et donne 3 conseils précis et motivants en français.${targetedContext}
+      contents: `
+Tu es un coach de basket expert assisté par IA.
+Analyse ces statistiques et donne 3 conseils précis en français.${targetedContext}
 
 Statistiques :
 - Taux de réussite : ${stats.accuracy}%
@@ -25,16 +31,24 @@ Statistiques :
 - Position des pieds : ${stats.footPlacement}
 - Fatigue détectée : ${stats.fatigueLevel}%
 
-Format de réponse : JSON avec une liste de 3 strings sous la clé 'tips'.`,
+Réponds UNIQUEMENT en JSON :
+{"tips": ["...", "...", "..."]}
+      `,
       config: {
         responseMimeType: "application/json",
-      }
+      },
     });
 
-    return JSON.parse(response.text || '{"tips": ["Continue à t\'entraîner !", "Reste concentré sur ton geste.", "Analyse tes vidéos."]}');
+    return JSON.parse(response.text ?? '{"tips": []}');
   } catch (error) {
     console.error("Gemini Error:", error);
-    return { tips: ["Erreur de connexion au coach IA.", "Vérifie tes réglages.", "Réessaie plus tard."] };
+    return {
+      tips: [
+        "Erreur de connexion au coach IA.",
+        "Vérifie ta clé API.",
+        "Réessaie plus tard.",
+      ],
+    };
   }
 }
 
@@ -42,33 +56,30 @@ export async function generatePostMatchAnalysis(sessionData: any) {
   try {
     const response = await ai.models.generateContent({
       model: "gemini-3-flash-preview",
-      contents: `Tu es un analyste de basketball professionnel. 
-      Réalise un compte-rendu d'entraînement détaillé en français basé sur les données suivantes :
-      
-      Résumé de la session :
-      - Durée : ${sessionData.duration}s
-      - Mouvements détectés : ${JSON.stringify(sessionData.moves)}
-      - Statistiques de dribble : Puissance avg ${sessionData.avgDribblePower}%, Rythme avg ${sessionData.avgDribbleRhythm} BPM
-      - Shooting : Forme avg ${sessionData.avgFormScore}/100
-      
-      Format de réponse attendu (JSON uniquement) :
-      {
-        "summary": "Un paragraphe d'analyse globale",
-        "kpis": [
-          {"label": "Nom de l'indicateur", "value": "Valeur", "assessment": "Excellent/Bon/A améliorer"}
-        ],
-        "strengths": ["Force 1", "Force 2"],
-        "weaknesses": ["Lacune 1", "Lacune 2"],
-        "drills": [
-          {"name": "Nom de l'exercice", "description": "Instructions détaillées"}
-        ]
-      }`,
+      contents: `
+Analyse cette session de basketball :
+
+- Durée : ${sessionData.duration}s
+- Mouvements : ${JSON.stringify(sessionData.moves)}
+- Dribble puissance : ${sessionData.avgDribblePower}%
+- Rythme : ${sessionData.avgDribbleRhythm} BPM
+- Shooting : ${sessionData.avgFormScore}/100
+
+Réponds UNIQUEMENT en JSON :
+{
+  "summary": "...",
+  "kpis": [],
+  "strengths": [],
+  "weaknesses": [],
+  "drills": []
+}
+      `,
       config: {
         responseMimeType: "application/json",
-      }
+      },
     });
 
-    return JSON.parse(response.text);
+    return JSON.parse(response.text ?? "{}");
   } catch (error) {
     console.error("Analysis Error:", error);
     throw error;
@@ -79,7 +90,8 @@ export async function getBasketballNews() {
   try {
     const response = await ai.models.generateContent({
       model: "gemini-3-flash-preview",
-      contents: "Donne-moi les 3 dernières actualités majeures du basketball mondial (NBA, Euroleague) avec des résumés courts et percutants.",
+      contents:
+        "Donne 3 actualités importantes du basketball (NBA, Euroleague) en français.",
       config: {
         tools: [{ googleSearch: {} }],
       },
@@ -87,13 +99,19 @@ export async function getBasketballNews() {
 
     return {
       text: response.text,
-      sources: response.candidates?.[0]?.groundingMetadata?.groundingChunks?.map(chunk => ({
-        title: chunk.web?.title,
-        url: chunk.web?.uri
-      })) || []
+      sources:
+        response.candidates?.[0]?.groundingMetadata?.groundingChunks?.map(
+          (chunk: any) => ({
+            title: chunk.web?.title,
+            url: chunk.web?.uri,
+          })
+        ) || [],
     };
   } catch (error) {
     console.error("News Fetch Error:", error);
-    return { text: "Impossible de récupérer les actualités pour le moment.", sources: [] };
+    return {
+      text: "Impossible de récupérer les actualités.",
+      sources: [],
+    };
   }
 }

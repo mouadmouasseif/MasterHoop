@@ -61,6 +61,7 @@ import {
   updateDoc,
   increment
 } from 'firebase/firestore';
+import { useGoogleLogin } from "@react-oauth/google";
 
 // --- Types ---
 interface Shot {
@@ -131,6 +132,14 @@ const SHOT_TYPE_COLORS: Record<string, string> = {
 import { DrillTutorials, Drill } from '@/src/components/DrillTutorials';
 
 export default function App() {
+   const loginWithGoogle = useGoogleLogin({
+    onSuccess: (tokenResponse) => {
+      console.log("LOGIN SUCCESS:", tokenResponse);
+    },
+    onError: () => {
+      console.log("LOGIN FAILED");
+    },
+  });
   const [user, setUser] = useState<FirebaseUser | null>(null);
   const [walletAddress, setWalletAddress] = useState<string | null>(null);
   const [profile, setProfile] = useState<UserProfile | null>(null);
@@ -489,12 +498,12 @@ export default function App() {
           <div className="flex items-center gap-3">
             {!user && !walletAddress ? (
               <div className="flex gap-2">
-                <button 
-                  onClick={loginWithGoogle}
-                  className="px-5 py-2.5 bg-brand-orange text-white rounded-xl font-bold hover:brightness-110 transition-all shadow-lg shadow-brand-orange/20"
-                >
-                  Login
-                </button>
+                 <button
+      onClick={() => loginWithGoogle()}
+      className="px-5 py-2.5 bg-brand-orange text-white rounded-xl font-bold hover:brightness-110 transition-all shadow-lg shadow-brand-orange/20"
+    >
+      Login
+    </button>
                 <button 
                   onClick={loginWithMetaMask}
                   className="px-3 py-2.5 bg-white/5 border border-white/10 text-white rounded-xl font-bold hover:bg-white/10 transition-all"
