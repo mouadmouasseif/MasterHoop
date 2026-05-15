@@ -1,0 +1,2 @@
+import { cn } from '@/src/lib/utils';
+export default function FilterButton({ active, onClick, label }: { active: boolean; onClick: () => void; label: string }) { return <button onClick={onClick} className={cn('px-4 py-1.5 rounded-lg text-[10px] font-bold uppercase transition-all whitespace-nowrap', active ? 'bg-brand-orange text-white shadow-lg shadow-brand-orange/20' : 'text-white/40 hover:text-white hover:bg-white/5')}>{label}</button>; }

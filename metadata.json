@@ -1,5 +1,5 @@
 {
-  "name": "Remix: HoopVision AI",
+  "name": "Master Hoop AI",
   "description": "Plateforme de coaching basket assistée par IA avec analyse en temps réel, suivi des mouvements et statistiques de performance.",
   "requestFramePermissions": [
     "camera",

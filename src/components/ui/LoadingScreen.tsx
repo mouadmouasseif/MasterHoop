@@ -1,0 +1,2 @@
+import { Target } from 'lucide-react';
+export default function LoadingScreen({ message = 'Chargement...' }: { message?: string }) { return <div className="min-h-screen bg-brand-dark flex flex-col items-center justify-center text-white"><div className="w-16 h-16 bg-brand-orange rounded-2xl flex items-center justify-center shadow-2xl shadow-brand-orange/40 mb-6"><Target className="w-8 h-8" /></div><p className="text-white/50 text-sm uppercase tracking-widest">{message}</p></div>; }

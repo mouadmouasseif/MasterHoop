@@ -1,0 +1,4 @@
+import React from 'react';
+import { motion } from 'motion/react';
+import { cn } from '@/src/lib/utils';
+export default function NavButton({ active, icon, label, onClick }: { active: boolean, icon: React.ReactNode, label: string, onClick?: () => void }) { return <button onClick={onClick} className={cn('flex flex-col items-center gap-1.5 transition-all p-2 rounded-xl group relative', active ? 'text-brand-orange' : 'text-white/40 hover:text-white')}><div className={cn('p-2.5 rounded-xl transition-all', active ? 'bg-brand-orange/10' : 'group-hover:bg-white/5')}>{React.cloneElement(icon as React.ReactElement, { size: 24 } as any)}</div><span className="text-[10px] font-bold uppercase tracking-wider hidden md:block">{label}</span>{active && <motion.div layoutId="activeNav" className="absolute -right-0.5 top-1/4 bottom-1/4 w-1 bg-brand-orange rounded-full hidden md:block" />}</button>; }
