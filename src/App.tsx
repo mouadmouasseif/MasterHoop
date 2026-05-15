@@ -18,7 +18,8 @@ import {
   TrendingUp,
   Brain,
   Award,
-  Zap
+  Zap,
+  BookOpen,
 } from 'lucide-react';
 import { 
   LineChart, 
