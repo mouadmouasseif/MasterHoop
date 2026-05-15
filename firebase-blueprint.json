@@ -1,0 +1,64 @@
+{
+  "entities": {
+    "User": {
+      "title": "User Profile",
+      "description": "User account information and aggregate statistics.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "name": { "type": "string" },
+        "age": { "type": "integer" },
+        "height": { "type": "number" },
+        "weight": { "type": "number" },
+        "totalSessions": { "type": "integer" },
+        "avgAccuracy": { "type": "number" },
+        "bestAccuracy": { "type": "number" },
+        "preferredShot": { "type": "string" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "name"]
+    },
+    "Session": {
+      "title": "Training Session",
+      "description": "Individual training session data.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "timestamp": { "type": "string", "format": "date-time" },
+        "duration": { "type": "string" },
+        "accuracy": { "type": "number" },
+        "madeShots": { "type": "integer" },
+        "missedShots": { "type": "integer" },
+        "dribbleCount": { "type": "integer" },
+        "avgPower": { "type": "number" },
+        "videoUrl": { "type": "string" },
+        "thumbnail": { "type": "string" },
+        "notes": { "type": "string" },
+        "shots": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "x": { "type": "number" },
+              "y": { "type": "number" },
+              "z": { "type": "number" },
+              "shotType": { "type": "string" },
+              "outcome": { "type": "string", "enum": ["made", "missed"] }
+            }
+          }
+        }
+      },
+      "required": ["userId", "timestamp"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "Public and private user profile data."
+    },
+    "/sessions/{sessionId}": {
+      "schema": "Session",
+      "description": "Training sessions tracked by users."
+    }
+  }
+}

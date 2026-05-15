@@ -1,0 +1,65 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Default deny
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    // --- Users ---
+    match /users/{userId} {
+      function isValidUser(data) {
+        return data.userId == request.auth.uid 
+          && data.name is string && data.name.size() > 0 && data.name.size() <= 100
+          && (data.get('age', 0) is int)
+          && (data.get('height', 0) is number)
+          && (data.get('weight', 0) is number)
+          && (data.get('totalSessions', 0) is int)
+          && (data.get('avgAccuracy', 0) is number)
+          && (data.get('bestAccuracy', 0) is number)
+          && (data.get('updatedAt', request.time) is timestamp);
+      }
+
+      allow get: if isSignedIn(); // Allow reading profile for UI
+      allow create: if isOwner(userId) && isValidUser(request.resource.data);
+      allow update: if isOwner(userId) && isValidUser(request.resource.data)
+        && request.resource.data.userId == resource.data.userId;
+    }
+
+    // --- Sessions ---
+    match /sessions/{sessionId} {
+      function isValidSession(data) {
+        return data.userId == request.auth.uid
+          && (data.timestamp is timestamp || data.timestamp is string)
+          && (data.get('accuracy', 0) is number)
+          && (data.get('madeShots', 0) is int)
+          && (data.get('missedShots', 0) is int)
+          && (data.get('dribbleCount', 0) is int)
+          && (data.get('avgPower', 0) is number)
+          && (data.get('notes', '') is string)
+          && (data.get('duration', '') is string)
+          && (data.get('videoUrl', '') is string);
+      }
+
+      allow list: if isSignedIn() && resource.data.userId == request.auth.uid;
+      allow get: if isOwner(resource.data.userId);
+      allow create: if isSignedIn() && isValidSession(request.resource.data)
+        && request.resource.data.userId == request.auth.uid;
+      allow update: if isOwner(resource.data.userId) && isValidSession(request.resource.data)
+        && request.resource.data.userId == resource.data.userId;
+      allow delete: if isOwner(resource.data.userId);
+    }
+  }
+}
