@@ -3,11 +3,43 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>My Google AI Studio App</title>
+    <title>Master Hopper - By MOUASSEIF MOUAD</title>
   </head>
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
-  </body>
+  </body>   
+   <footer className="w-full py-10 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-700">
+      <div className="flex flex-col md:flex-row justify-between items-center gap-8">
+        {/* Logo et nom de la société */}
+        <div className="flex items-center gap-3">
+          <h1 className="text-xl font-medium text-white">Mouad Mouasseif</h1>
+        </div>
+
+        {/* Liens légaux */}
+        <div className="flex flex-wrap gap-4 text-sm text-gray-400">
+          <a href="/privacy-policy" className="hover:text-white">Politique de confidentialité</a>
+          <a href="/terms-of-service" className="hover:text-white">Conditions d'utilisation</a>
+        </div>
+
+        {/* Développement */}
+        <div className="flex items-center gap-3 text-xs text-gray-500">
+          <span>Développé par</span>
+          <a
+            href="https://www.linkedin.com/company/mm-servicese/?viewAsMember=true"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-2 hover:text-blue-400"
+          >
+            
+            <span className="font-semibold">Made For Web</span>
+          </a>
+        </div>
+      </div>
+
+      <p className="text-center text-xs text-gray-500 mt-6">
+        &copy;2026 Mouad Mouasseif & <a href="https://www.linkedin.com/company/made-forweb/?viewAsMember=true">Made for Web</a>. Tous droits réservés.
+      </p>
+    </footer>
 </html>
 
