@@ -20,6 +20,7 @@ import {
   Award,
   Zap,
   BookOpen,
+
 } from 'lucide-react';
 import { 
   LineChart, 
@@ -482,7 +483,7 @@ export default function App() {
           isImmersive && activeTab === 'live' && "opacity-0 h-0 mb-0 overflow-hidden"
         )}>
           <div>
-            <h1 className="text-3xl font-bold tracking-tight">HoopVision AI</h1>
+            <h1 className="text-3xl font-bold tracking-tight">Master Hoop - by Mouad Mouasseif</h1>
             <p className="text-white/40 text-sm mt-1">Analyse de performance basketball en temps réel</p>
           </div>
           <div className="flex items-center gap-3">

@@ -76,7 +76,7 @@ export function DrillTutorials({ onStartDrill }: DrillTutorialsProps) {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: idx * 0.1 }}
-            className="group relative bg-brand-surface border border-white/5 rounded-[2rem] overflow-hidden hover:border-brand-orange/30 transition-all duration-500"
+            className="group relative bg-brand-surface border border-white/5 rounded-[2rem] overflow-hidden hover:border-brand-blue/30 transition-all duration-500"
           >
             {/* Image Section */}
             <div className="relative h-60 overflow-hidden">
@@ -90,7 +90,7 @@ export function DrillTutorials({ onStartDrill }: DrillTutorialsProps) {
               <div className="absolute top-4 left-4 flex gap-2">
                 <span className={cn(
                   "px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest bg-black/40 backdrop-blur-md border border-white/10",
-                  drill.difficulty === 'Pro' ? "text-red-400" : drill.difficulty === 'Intermediate' ? "text-brand-orange" : "text-green-400"
+                  drill.difficulty === 'Pro' ? "text-red-400" : drill.difficulty === 'Intermediate' ? "text-brand-blue" : "text-green-400"
                 )}>
                   {drill.difficulty}
                 </span>
@@ -102,7 +102,7 @@ export function DrillTutorials({ onStartDrill }: DrillTutorialsProps) {
               <motion.button
                 whileHover={{ scale: 1.1 }}
                 whileTap={{ scale: 0.9 }}
-                className="absolute inset-0 m-auto w-16 h-16 bg-brand-orange rounded-full flex items-center justify-center shadow-2xl shadow-brand-orange/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+                className="absolute inset-0 m-auto w-16 h-16 bg-brand-blue rounded-full flex items-center justify-center shadow-2xl shadow-brand-blue/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300"
               >
                 <Play fill="white" className="text-white ml-1" size={24} />
               </motion.button>
@@ -140,7 +140,7 @@ export function DrillTutorials({ onStartDrill }: DrillTutorialsProps) {
                   <motion.button
                     whileHover={{ scale: 1.05 }}
                     onClick={() => onStartDrill(drill)}
-                    className="flex-1 py-4 bg-brand-orange text-white rounded-2xl font-black uppercase tracking-widest text-xs shadow-lg shadow-brand-orange/20 flex items-center justify-center gap-3 transition-all duration-300"
+                    className="flex-1 py-4 bg-brand-blue text-white rounded-2xl font-black uppercase tracking-widest text-xs shadow-lg shadow-brand-blue/20 flex items-center justify-center gap-3 transition-all duration-300"
                   >
                     Démarrer
                     <Play size={14} fill="currentColor" />

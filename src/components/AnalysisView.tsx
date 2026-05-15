@@ -21,7 +21,7 @@ export default function AnalysisView({ analysis, onClose }: AnalysisViewProps) {
       className="max-w-4xl w-full mx-auto bg-brand-dark/80 backdrop-blur-xl border border-white/10 rounded-3xl overflow-hidden shadow-2xl"
     >
       {/* Header */}
-      <div className="p-8 border-b border-white/10 flex justify-between items-center bg-gradient-to-r from-brand-orange/10 to-transparent">
+      <div className="p-8 border-b border-white/10 flex justify-between items-center bg-gradient-to-r from-brand-blue/10 to-transparent">
         <div>
           <h2 className="text-3xl font-black text-white italic uppercase tracking-tighter">
             Analyse Post-Session
@@ -42,7 +42,7 @@ export default function AnalysisView({ analysis, onClose }: AnalysisViewProps) {
         <div className="md:col-span-2 space-y-8">
           <section>
             <div className="flex items-center gap-2 mb-4">
-              <Info size={18} className="text-brand-orange" />
+              <Info size={18} className="text-brand-blue" />
               <h3 className="text-lg font-bold text-white uppercase tracking-tight">Résumé Global</h3>
             </div>
             <div className="p-6 bg-white/5 rounded-2xl border border-white/5 leading-relaxed text-white/80">
@@ -52,7 +52,7 @@ export default function AnalysisView({ analysis, onClose }: AnalysisViewProps) {
 
           <section>
             <div className="flex items-center gap-2 mb-4">
-              <TrendingUp size={18} className="text-brand-orange" />
+              <TrendingUp size={18} className="text-brand-blue" />
               <h3 className="text-lg font-bold text-white uppercase tracking-tight">Indicateurs de Performance</h3>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -63,7 +63,7 @@ export default function AnalysisView({ analysis, onClose }: AnalysisViewProps) {
                   <div className={`text-[10px] uppercase font-bold px-2 py-0.5 rounded-full inline-block mt-2 ${
                     kpi.assessment.toLowerCase().includes('excellent') ? 'bg-green-500/10 text-green-400' :
                     kpi.assessment.toLowerCase().includes('bon') ? 'bg-blue-500/10 text-blue-400' :
-                    'bg-brand-orange/10 text-brand-orange'
+                    'bg-brand-blue/10 text-brand-blue'
                   }`}>
                     {kpi.assessment}
                   </div>
@@ -74,7 +74,7 @@ export default function AnalysisView({ analysis, onClose }: AnalysisViewProps) {
 
           <section>
             <div className="flex items-center gap-2 mb-4">
-              <Dumbbell size={18} className="text-brand-orange" />
+              <Dumbbell size={18} className="text-brand-blue" />
               <h3 className="text-lg font-bold text-white uppercase tracking-tight">Exercices Recommandés</h3>
             </div>
             <div className="space-y-4">
@@ -82,7 +82,7 @@ export default function AnalysisView({ analysis, onClose }: AnalysisViewProps) {
                 <div key={`drill-${idx}`} className="group p-6 bg-white/5 hover:bg-white/10 rounded-2xl border border-white/5 transition-all">
                   <div className="flex items-center justify-between mb-2">
                     <h4 className="font-bold text-white uppercase tracking-tight">{drill.name}</h4>
-                    <ChevronRight size={16} className="text-brand-orange group-hover:translate-x-1 transition-transform" />
+                    <ChevronRight size={16} className="text-brand-blue group-hover:translate-x-1 transition-transform" />
                   </div>
                   <p className="text-sm text-white/60 leading-relaxed">
                     {drill.description}
@@ -112,21 +112,21 @@ export default function AnalysisView({ analysis, onClose }: AnalysisViewProps) {
 
           <section>
             <div className="flex items-center gap-2 mb-4">
-              <Target size={18} className="text-brand-orange" />
+              <Target size={18} className="text-brand-blue" />
               <h3 className="text-lg font-bold text-white uppercase tracking-tight">Axes de Progrès</h3>
             </div>
             <div className="space-y-2">
               {analysis.weaknesses.map((weak, idx) => (
-                <div key={`weak-${idx}`} className="flex items-start gap-3 p-3 bg-brand-orange/5 rounded-xl border border-brand-orange/10">
-                  <div className="w-1.5 h-1.5 rounded-full bg-brand-orange mt-1.5 shadow-lg shadow-brand-orange/20" />
-                  <span className="text-sm text-brand-orange/80">{weak}</span>
+                <div key={`weak-${idx}`} className="flex items-start gap-3 p-3 bg-brand-blue/5 rounded-xl border border-brand-blue/10">
+                  <div className="w-1.5 h-1.5 rounded-full bg-brand-blue mt-1.5 shadow-lg shadow-brand-blue/20" />
+                  <span className="text-sm text-brand-blue/80">{weak}</span>
                 </div>
               ))}
             </div>
           </section>
 
           {/* Training Motivation Card */}
-          <div className="p-6 bg-gradient-to-br from-brand-orange to-red-600 rounded-3xl mt-12 overflow-hidden relative">
+          <div className="p-6 bg-gradient-to-br from-brand-blue to-red-600 rounded-3xl mt-12 overflow-hidden relative">
             <h4 className="text-2xl font-black text-white italic uppercase tracking-tighter leading-none mb-2">
               Prêt pour la Prochaine ?
             </h4>

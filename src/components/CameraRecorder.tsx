@@ -598,7 +598,7 @@ export function CameraRecorder({
         ctx.save();
         ctx.globalAlpha = opacity;
         
-        let moveColor = '#FF6B00'; // Default Orange (JUMPSHOT)
+        let moveColor = '#FF6B00'; // Default blue (JUMPSHOT)
         if (activeMove.name === 'FADEAWAY' || activeMove.name === 'REBOUND') moveColor = '#00FF94';
         if (activeMove.name === 'CROSSOVER' || activeMove.name === 'PASS') moveColor = '#3b82f6';
         if (activeMove.name === 'HESITATION') moveColor = '#FFD700';
@@ -846,7 +846,7 @@ export function CameraRecorder({
         <Square className="w-12 h-12 mx-auto text-red-500 mb-4" strokeWidth={1.5} />
         <h3 className="text-xl font-bold mb-2">Accès Caméra</h3>
         <p className="text-white/40 mb-6 text-sm">{error}</p>
-        <button onClick={() => setRetryCount(prev => prev + 1)} className="px-6 py-3 bg-brand-orange text-white rounded-xl font-bold">Réessayer</button>
+        <button onClick={() => setRetryCount(prev => prev + 1)} className="px-6 py-3 bg-brand-blue text-white rounded-xl font-bold">Réessayer</button>
       </div>
     );
   }
@@ -876,15 +876,15 @@ export function CameraRecorder({
             exit={{ opacity: 0, x: -20 }}
             className="absolute top-6 left-6 z-50 flex items-start gap-4 pointer-events-none"
           >
-            <div className="bg-black/60 backdrop-blur-xl border border-brand-orange/30 rounded-3xl p-5 shadow-2xl max-w-sm pointer-events-auto">
+            <div className="bg-black/60 backdrop-blur-xl border border-brand-blue/30 rounded-3xl p-5 shadow-2xl max-w-sm pointer-events-auto">
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 bg-brand-orange rounded-lg flex items-center justify-center shadow-lg shadow-brand-orange/20">
+                  <div className="w-8 h-8 bg-brand-blue rounded-lg flex items-center justify-center shadow-lg shadow-brand-blue/20">
                     <Target size={16} className="text-white" />
                   </div>
                   <div>
                     <h3 className="text-xs font-black text-white uppercase tracking-widest">{currentDrill.name}</h3>
-                    <p className="text-[10px] text-brand-orange font-bold uppercase">{currentDrill.category}</p>
+                    <p className="text-[10px] text-brand-blue font-bold uppercase">{currentDrill.category}</p>
                   </div>
                 </div>
                 <button 
@@ -898,7 +898,7 @@ export function CameraRecorder({
               <div className="space-y-3">
                 {currentDrill.aiFocus.map((point, idx) => (
                   <div key={point} className="flex items-center gap-3">
-                    <div className="w-1.5 h-1.5 rounded-full bg-brand-orange/40" />
+                    <div className="w-1.5 h-1.5 rounded-full bg-brand-blue/40" />
                     <span className="text-[10px] text-white/60 font-bold uppercase tracking-wider">{point}</span>
                   </div>
                 ))}
@@ -906,7 +906,7 @@ export function CameraRecorder({
 
               <div className="mt-6 pt-4 border-t border-white/5">
                 <div className="flex items-center gap-2 mb-2">
-                  <div className="w-1 h-3 bg-brand-orange rounded-full" />
+                  <div className="w-1 h-3 bg-brand-blue rounded-full" />
                   <span className="text-[9px] font-black text-white/40 uppercase tracking-widest">AI Feedback Direct</span>
                 </div>
                 <motion.p 
@@ -932,7 +932,7 @@ export function CameraRecorder({
       {!stream || !isAnalyzerReady && (
         <div className="absolute inset-0 flex items-center justify-center bg-brand-surface/80 backdrop-blur-sm z-20">
           <div className="flex flex-col items-center gap-4">
-            <div className="w-12 h-12 border-4 border-brand-orange border-t-transparent rounded-full animate-spin"></div>
+            <div className="w-12 h-12 border-4 border-brand-blue border-t-transparent rounded-full animate-spin"></div>
             <p className="text-white/60 font-medium tracking-tight">Initialisation HoopVision AI...</p>
           </div>
         </div>
@@ -950,7 +950,7 @@ export function CameraRecorder({
             }}
             className={cn(
               "p-3 rounded-xl shadow-xl border flex items-center gap-2 transition-all",
-              isScanning ? "bg-white text-black animate-pulse" : "bg-brand-orange text-white border-brand-orange/30"
+              isScanning ? "bg-white text-black animate-pulse" : "bg-brand-blue text-white border-brand-blue/30"
             )}
           >
              <Activity size={18} />
@@ -979,7 +979,7 @@ export function CameraRecorder({
                 className={cn(
                   "px-2.5 py-1.5 rounded-lg text-[10px] font-bold transition-all uppercase tracking-tighter whitespace-nowrap",
                   selectedMoves.includes(move.id) 
-                    ? "bg-brand-orange text-white shadow-lg shadow-brand-orange/20" 
+                    ? "bg-brand-blue text-white shadow-lg shadow-brand-blue/20" 
                     : "text-white/40 hover:text-white/60 hover:bg-white/5"
                 )}
               >
@@ -1046,7 +1046,7 @@ export function CameraRecorder({
                     }}
                     className={cn(
                       "p-1.5 rounded-lg border text-[10px] font-bold transition-all",
-                      analyzerRef.current?.perspective === p.id ? "bg-brand-orange border-brand-orange text-white" : "border-white/10 text-white/40 hover:bg-white/5"
+                      analyzerRef.current?.perspective === p.id ? "bg-brand-blue border-brand-blue text-white" : "border-white/10 text-white/40 hover:bg-white/5"
                     )}
                   >
                     {p.label}
@@ -1064,7 +1064,7 @@ export function CameraRecorder({
                     onClick={() => setCourtType(t)}
                     className={cn(
                       "p-1.5 rounded-lg border text-[10px] font-bold transition-all",
-                      courtType === t ? "bg-brand-orange border-brand-orange text-white" : "border-white/10 text-white/40 hover:bg-white/5"
+                      courtType === t ? "bg-brand-blue border-brand-blue text-white" : "border-white/10 text-white/40 hover:bg-white/5"
                     )}
                   >
                     {t}
@@ -1130,7 +1130,7 @@ export function CameraRecorder({
                     onClick={() => setVideoQuality(q)}
                     className={cn(
                       "p-1.5 rounded-lg border text-[10px] font-bold transition-all",
-                      videoQuality === q ? "bg-brand-orange border-brand-orange text-white shadow-lg shadow-brand-orange/20" : "border-white/10 text-white/40 hover:bg-white/5"
+                      videoQuality === q ? "bg-brand-blue border-brand-blue text-white shadow-lg shadow-brand-blue/20" : "border-white/10 text-white/40 hover:bg-white/5"
                     )}
                   >
                     {q}
@@ -1190,7 +1190,7 @@ export function CameraRecorder({
                   initial={{ scale: 0.8, opacity: 0 }}
                   animate={{ scale: 1, opacity: 1 }}
                   exit={{ scale: 0.8, opacity: 0 }}
-                  className="px-3 py-1 bg-brand-orange text-white text-[10px] font-bold rounded-lg flex items-center gap-2 shadow-lg shadow-brand-orange/20"
+                  className="px-3 py-1 bg-brand-blue text-white text-[10px] font-bold rounded-lg flex items-center gap-2 shadow-lg shadow-brand-blue/20"
                 >
                   ZONE PEINTE
                 </motion.div>
@@ -1200,7 +1200,7 @@ export function CameraRecorder({
                   initial={{ scale: 0.8, opacity: 0 }}
                   animate={{ scale: 1, opacity: 1 }}
                   exit={{ scale: 0.8, opacity: 0 }}
-                  className="px-3 py-1 bg-brand-orange text-white text-[10px] font-bold rounded-lg flex items-center gap-2 shadow-lg shadow-brand-orange/20"
+                  className="px-3 py-1 bg-brand-blue text-white text-[10px] font-bold rounded-lg flex items-center gap-2 shadow-lg shadow-brand-blue/20"
                 >
                   <RefreshCw size={12} className="animate-spin" /> BALLON DÉTECTÉ
                 </motion.div>
@@ -1228,14 +1228,14 @@ export function CameraRecorder({
               exit={{ opacity: 0, x: -30 }}
               className="mt-4"
             >
-              <div className="glass-card p-5 border-brand-orange/30 bg-black/80 backdrop-blur-2xl w-[240px] shadow-2xl">
+              <div className="glass-card p-5 border-brand-blue/30 bg-black/80 backdrop-blur-2xl w-[240px] shadow-2xl">
                 <div className="flex items-center justify-between mb-4">
                   <div className="flex flex-col">
-                    <span className="text-[10px] font-bold text-brand-orange uppercase tracking-widest">{activeMove.name} ANALYSE</span>
+                    <span className="text-[10px] font-bold text-brand-blue uppercase tracking-widest">{activeMove.name} ANALYSE</span>
                     <span className="text-[8px] text-white/30 font-mono">FRAME {Math.floor(activeMove.timestamp % 10000)}</span>
                   </div>
-                  <div className="p-2 bg-brand-orange/10 rounded-lg">
-                    <Activity size={14} className="text-brand-orange animate-pulse" />
+                  <div className="p-2 bg-brand-blue/10 rounded-lg">
+                    <Activity size={14} className="text-brand-blue animate-pulse" />
                   </div>
                 </div>
                 
@@ -1243,12 +1243,12 @@ export function CameraRecorder({
                   {activeMove.name === 'DRIBBLE' ? (
                     <>
                       <div className="flex flex-col gap-1 pr-1">
-                        <TechnicalMetric label="Puissance" value={`${activeMove.metrics.power}%`} color={activeMove.metrics.power > 75 ? "text-orange-500" : "text-brand-neon"} />
+                        <TechnicalMetric label="Puissance" value={`${activeMove.metrics.power}%`} color={activeMove.metrics.power > 75 ? "text-blue-500" : "text-brand-neon"} />
                         <div className="w-full h-1 bg-white/10 rounded-full overflow-hidden">
                            <motion.div 
                              initial={{ width: 0 }}
                              animate={{ width: `${activeMove.metrics.power}%` }}
-                             className={cn("h-full", activeMove.metrics.power > 75 ? "bg-brand-orange" : "bg-brand-neon")} 
+                             className={cn("h-full", activeMove.metrics.power > 75 ? "bg-brand-blue" : "bg-brand-neon")} 
                            />
                         </div>
                         <span className="text-[7px] text-white/30 italic">
@@ -1333,7 +1333,7 @@ export function CameraRecorder({
                       </div>
                     </div>
                   )}
-                  <div className="flex items-center justify-center gap-2 text-[8px] text-brand-orange/60 uppercase font-bold text-center tracking-tighter">
+                  <div className="flex items-center justify-center gap-2 text-[8px] text-brand-blue/60 uppercase font-bold text-center tracking-tighter">
                     <span>FORME TECHNIQUE OPTIMALE</span>
                     <ChevronRight size={10} />
                   </div>
@@ -1387,13 +1387,13 @@ function CourtSetupGuide({ onComplete, courtType }: { onComplete: () => void, co
 
         <div className="flex-1 overflow-y-auto p-6 sm:p-10 space-y-8">
           <div className="text-center space-y-4">
-             <div className="inline-flex items-center gap-2 px-3 py-1 bg-brand-orange/10 border border-brand-orange/20 rounded-full">
-                <div className="w-2 h-2 rounded-full bg-brand-orange animate-pulse" />
-                <span className="text-[10px] font-black text-brand-orange uppercase">Placement Optimal</span>
+             <div className="inline-flex items-center gap-2 px-3 py-1 bg-brand-blue/10 border border-brand-blue/20 rounded-full">
+                <div className="w-2 h-2 rounded-full bg-brand-blue animate-pulse" />
+                <span className="text-[10px] font-black text-brand-blue uppercase">Placement Optimal</span>
              </div>
              <p className="text-sm sm:text-base text-white/80 leading-relaxed font-medium italic">
-                "Placez votre téléphone dans le <span className="text-brand-orange font-black uppercase">coin arrière</span>. 
-                L'angle doit couvrir <span className="underline decoration-brand-orange/40 underline-offset-4">le panier et la ligne à 3 points</span>."
+                "Placez votre téléphone dans le <span className="text-brand-blue font-black uppercase">coin arrière</span>. 
+                L'angle doit couvrir <span className="underline decoration-brand-blue/40 underline-offset-4">le panier et la ligne à 3 points</span>."
              </p>
           </div>
 
@@ -1415,14 +1415,14 @@ function CourtSetupGuide({ onComplete, courtType }: { onComplete: () => void, co
               <div className="bg-white/5 rounded-3xl border border-white/5 p-6 flex flex-col items-center gap-4">
                 <div className="relative w-full max-w-[180px] aspect-square flex flex-col justify-end p-2 border-2 border-white/5 rounded-2xl bg-black/40">
                     <div className="absolute top-6 left-1/2 -translate-x-1/2 w-[75%] h-[75%] border-2 border-white/10 rounded-b-full border-t-0" />
-                    <div className="absolute top-2 left-1/2 -translate-x-1/2 w-6 h-2 bg-brand-orange/40 rounded-full" />
+                    <div className="absolute top-2 left-1/2 -translate-x-1/2 w-6 h-2 bg-brand-blue/40 rounded-full" />
                     
                     <motion.div 
                       animate={{ y: [0, -4, 0], scale: [1, 1.05, 1] }}
                       transition={{ duration: 2, repeat: Infinity }}
                       className="absolute bottom-2 left-2 flex flex-col items-center gap-1"
                     >
-                      <div className="w-10 h-6 bg-brand-orange rounded-lg flex items-center justify-center shadow-xl shadow-brand-orange/40 border border-white/20">
+                      <div className="w-10 h-6 bg-brand-blue rounded-lg flex items-center justify-center shadow-xl shadow-brand-blue/40 border border-white/20">
                         <Video size={12} className="text-white" />
                       </div>
                     </motion.div>
@@ -1439,7 +1439,7 @@ function CourtSetupGuide({ onComplete, courtType }: { onComplete: () => void, co
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
             onClick={onComplete}
-            className="w-full py-4 bg-brand-orange text-white rounded-[1.5rem] font-black uppercase tracking-[0.2em] text-xs shadow-2xl shadow-brand-orange/30 flex items-center justify-center gap-3"
+            className="w-full py-4 bg-brand-blue text-white rounded-[1.5rem] font-black uppercase tracking-[0.2em] text-xs shadow-2xl shadow-brand-blue/30 flex items-center justify-center gap-3"
           >
             Commencer l'analyse
             <ChevronRight size={18} />
@@ -1469,7 +1469,7 @@ function CalibrationSlider({ label, value, onChange, min = 0, max = 1 }: { label
           setVal(v);
           onChange(v);
         }}
-        className="w-full accent-brand-orange h-1 bg-white/10 rounded-full appearance-none cursor-pointer"
+        className="w-full accent-brand-blue h-1 bg-white/10 rounded-full appearance-none cursor-pointer"
       />
     </div>
   );
