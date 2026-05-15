@@ -1385,54 +1385,84 @@ function CourtSetupGuide({ onComplete, courtType }: { onComplete: () => void, co
           </button>
         </div>
 
-        <div className="flex-1 overflow-y-auto p-6 sm:p-10 space-y-8">
-          <div className="text-center space-y-4">
-             <div className="inline-flex items-center gap-2 px-3 py-1 bg-brand-blue/10 border border-brand-blue/20 rounded-full">
-                <div className="w-2 h-2 rounded-full bg-brand-blue animate-pulse" />
-                <span className="text-[10px] font-black text-brand-blue uppercase">Placement Optimal</span>
-             </div>
-             <p className="text-sm sm:text-base text-white/80 leading-relaxed font-medium italic">
-                "Placez votre téléphone dans le <span className="text-brand-blue font-black uppercase">coin arrière</span>. 
-                L'angle doit couvrir <span className="underline decoration-brand-blue/40 underline-offset-4">le panier et la ligne à 3 points</span>."
-             </p>
-          </div>
+       <div className="relative flex-1 overflow-y-auto p-6 sm:p-10 space-y-8">
+  
+  {/* Button fermeture */}
+  <button
+    onClick={() => setIsOpen(false)}
+    className="absolute top-4 right-4 z-50 w-10 h-10 flex items-center justify-center rounded-full bg-white/10 hover:bg-red-500/80 transition-all duration-300 border border-white/10 backdrop-blur-md"
+  >
+    ✕
+  </button>
 
-          <div className="grid grid-cols-1 gap-6">
-            <div className="relative rounded-3xl overflow-hidden border border-white/5 aspect-video bg-black/40">
-              <img 
-                src="https://images.unsplash.com/photo-1544919982-b61976f0ba43?auto=format&fit=crop&q=80&w=800" 
-                alt="Guide" 
-                className="w-full h-full object-cover opacity-40 grayscale"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent" />
-              <div className="absolute top-4 left-4">
-                 <span className="text-[9px] font-black text-white/40 bg-black/40 px-2 py-1 rounded border border-white/5 uppercase tracking-widest">Exemple Réel</span>
-              </div>
+  <div className="text-center space-y-4">
+    <div className="inline-flex items-center gap-2 px-3 py-1 bg-brand-blue/10 border border-brand-blue/20 rounded-full">
+      <div className="w-2 h-2 rounded-full bg-brand-blue animate-pulse" />
+      <span className="text-[10px] font-black text-brand-blue uppercase">
+        Placement Optimal
+      </span>
+    </div>
+
+    <p className="text-sm sm:text-base text-white/80 leading-relaxed font-medium italic">
+      "Placez votre téléphone dans le{" "}
+      <span className="text-brand-blue font-black uppercase">
+        coin arrière
+      </span>
+      . L'angle doit couvrir{" "}
+      <span className="underline decoration-brand-blue/40 underline-offset-4">
+        le panier et la ligne à 3 points
+      </span>
+      ."
+    </p>
+  </div>
+
+  <div className="grid grid-cols-1 gap-6">
+    <div className="relative rounded-3xl overflow-hidden border border-white/5 aspect-video bg-black/40">
+      <img
+        src="https://images.unsplash.com/photo-1544919982-b61976f0ba43?auto=format&fit=crop&q=80&w=800"
+        alt="Guide"
+        className="w-full h-full object-cover opacity-40 grayscale"
+      />
+
+      <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent" />
+
+      <div className="absolute top-4 left-4">
+        <span className="text-[9px] font-black text-white/40 bg-black/40 px-2 py-1 rounded border border-white/5 uppercase tracking-widest">
+          Exemple Réel
+        </span>
+      </div>
+    </div>
+
+    {/* Show detailed court diagram only if technical tracking is active */}
+    {courtType !== "none" && (
+      <div className="bg-white/5 rounded-3xl border border-white/5 p-6 flex flex-col items-center gap-4">
+        <div className="relative w-full max-w-[180px] aspect-square flex flex-col justify-end p-2 border-2 border-white/5 rounded-2xl bg-black/40">
+          <div className="absolute top-6 left-1/2 -translate-x-1/2 w-[75%] h-[75%] border-2 border-white/10 rounded-b-full border-t-0" />
+
+          <div className="absolute top-2 left-1/2 -translate-x-1/2 w-6 h-2 bg-brand-blue/40 rounded-full" />
+
+          <motion.div
+            animate={{ y: [0, -4, 0], scale: [1, 1.05, 1] }}
+            transition={{ duration: 2, repeat: Infinity }}
+            className="absolute bottom-2 left-2 flex flex-col items-center gap-1"
+          >
+            <div className="w-10 h-6 bg-brand-blue rounded-lg flex items-center justify-center shadow-xl shadow-brand-blue/40 border border-white/20">
+              <Video size={12} className="text-white" />
             </div>
+          </motion.div>
 
-            {/* Show detailed court diagram only if technical tracking is active */}
-            {courtType !== 'none' && (
-              <div className="bg-white/5 rounded-3xl border border-white/5 p-6 flex flex-col items-center gap-4">
-                <div className="relative w-full max-w-[180px] aspect-square flex flex-col justify-end p-2 border-2 border-white/5 rounded-2xl bg-black/40">
-                    <div className="absolute top-6 left-1/2 -translate-x-1/2 w-[75%] h-[75%] border-2 border-white/10 rounded-b-full border-t-0" />
-                    <div className="absolute top-2 left-1/2 -translate-x-1/2 w-6 h-2 bg-brand-blue/40 rounded-full" />
-                    
-                    <motion.div 
-                      animate={{ y: [0, -4, 0], scale: [1, 1.05, 1] }}
-                      transition={{ duration: 2, repeat: Infinity }}
-                      className="absolute bottom-2 left-2 flex flex-col items-center gap-1"
-                    >
-                      <div className="w-10 h-6 bg-brand-blue rounded-lg flex items-center justify-center shadow-xl shadow-brand-blue/40 border border-white/20">
-                        <Video size={12} className="text-white" />
-                      </div>
-                    </motion.div>
-                    <div className="absolute bottom-3 right-4 text-[8px] font-black text-white/20 uppercase tracking-widest">Zone Tracking</div>
-                </div>
-                <p className="text-[10px] text-white/30 font-bold uppercase tracking-widest">Vue top-down (45°)</p>
-              </div>
-            )}
+          <div className="absolute bottom-3 right-4 text-[8px] font-black text-white/20 uppercase tracking-widest">
+            Zone Tracking
           </div>
         </div>
+
+        <p className="text-[10px] text-white/30 font-bold uppercase tracking-widest">
+          Vue top-down (45°)
+        </p>
+      </div>
+    )}
+  </div>
+</div>
 
         <div className="p-8 bg-black/20 border-t border-white/5">
           <motion.button

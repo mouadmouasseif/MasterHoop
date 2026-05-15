@@ -15,6 +15,7 @@ import HistoryPage from "@/src/pages/HistoryPage";
 import ProfilePage from "@/src/pages/ProfilePage";
 import LandingPage from "@/src/pages/LandingPage";
 
+
 import CompleteProfile from "@/src/components/auth/CompleteProfile";
 
 import { auth, db } from "@/src/lib/firebase";
