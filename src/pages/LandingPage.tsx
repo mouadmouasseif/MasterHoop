@@ -16,7 +16,17 @@ const drills = [
   { title: 'Release Timing', difficulty: 'Pro', target: 'Shooting', score: '88%' },
 ];
 
-export default function LandingPage({ onStart, onGoogleLogin }: { onStart: () => void; onGoogleLogin: () => void }) {
+export default function LandingPage({
+  onStart,
+  onGoogleLogin,
+  isAuthLoading = false,
+  authError,
+}: {
+  onStart: () => void;
+  onGoogleLogin: () => void;
+  isAuthLoading?: boolean;
+  authError?: string | null;
+}) {
   return (
     <div className="min-h-screen bg-brand-dark text-white">
       <header className="sticky top-0 z-40 border-b border-white/10 bg-brand-dark/80 backdrop-blur-xl">
@@ -29,8 +39,20 @@ export default function LandingPage({ onStart, onGoogleLogin }: { onStart: () =>
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <button onClick={onGoogleLogin} className="hidden rounded-xl border border-white/10 px-4 py-2 text-xs font-bold text-white/70 transition hover:bg-white/5 md:block">Login Google</button>
-            <button onClick={onStart} className="rounded-xl bg-brand-orange px-4 py-2 text-xs font-black uppercase tracking-wider text-white shadow-lg shadow-brand-orange/20 transition hover:brightness-110">Ouvrir l'app</button>
+            <button
+              onClick={onGoogleLogin}
+              disabled={isAuthLoading}
+              className="hidden rounded-xl border border-white/10 px-4 py-2 text-xs font-bold text-white/70 transition hover:bg-white/5 disabled:cursor-not-allowed disabled:opacity-50 md:block"
+            >
+              {isAuthLoading ? 'Connexion...' : 'Login Google'}
+            </button>
+            <button
+              onClick={onStart}
+              disabled={isAuthLoading}
+              className="rounded-xl bg-brand-orange px-4 py-2 text-xs font-black uppercase tracking-wider text-white shadow-lg shadow-brand-orange/20 transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {isAuthLoading ? 'Connexion...' : "Ouvrir l'app"}
+            </button>
           </div>
         </div>
       </header>
@@ -46,13 +68,26 @@ export default function LandingPage({ onStart, onGoogleLogin }: { onStart: () =>
               <p className="max-w-2xl text-base leading-7 text-white/60 md:text-lg">La plateforme combine onboarding joueur, drills guides, camera live, pose detection et feedback IA pour mesurer la forme de tir, le dribble, l'equilibre et la progression.</p>
             </div>
             <div className="flex flex-col gap-3 sm:flex-row">
-              <button onClick={onStart} className="flex items-center justify-center gap-2 rounded-2xl bg-brand-orange px-6 py-4 text-sm font-black uppercase tracking-wider text-white shadow-2xl shadow-brand-orange/25 transition hover:brightness-110">
-                Commencer l'analyse <ArrowRight size={18} />
+              <button
+                onClick={onStart}
+                disabled={isAuthLoading}
+                className="flex items-center justify-center gap-2 rounded-2xl bg-brand-orange px-6 py-4 text-sm font-black uppercase tracking-wider text-white shadow-2xl shadow-brand-orange/25 transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {isAuthLoading ? 'Connexion Google...' : "Commencer l'analyse"} <ArrowRight size={18} />
               </button>
-              <button onClick={onGoogleLogin} className="flex items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/5 px-6 py-4 text-sm font-bold text-white transition hover:bg-white/10">
-                Login Google <UserRound size={18} />
+              <button
+                onClick={onGoogleLogin}
+                disabled={isAuthLoading}
+                className="flex items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/5 px-6 py-4 text-sm font-bold text-white transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {isAuthLoading ? 'Connexion...' : 'Login Google'} <UserRound size={18} />
               </button>
             </div>
+            {authError && (
+              <div className="max-w-2xl rounded-2xl border border-red-500/25 bg-red-500/10 p-4 text-sm leading-6 text-red-200">
+                {authError}
+              </div>
+            )}
           </div>
 
           <div className="relative min-h-[420px] overflow-hidden rounded-3xl border border-white/10 bg-black/40 p-6 shadow-2xl">

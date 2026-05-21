@@ -17,35 +17,45 @@ export default function Sidebar({
   activeTab,
   setActiveTab,
   isImmersive,
+  setIsImmersive,
 }: {
   activeTab: ActiveTab;
   setActiveTab: (tab: ActiveTab) => void;
   isImmersive: boolean;
+  setIsImmersive?: (value: boolean) => void;
 }) {
   const navigate = (tab: ActiveTab) => {
     setActiveTab(tab);
+
+    // UX PRO: quitter immersive si on change de page
+    if (tab !== "live" && setIsImmersive) {
+      setIsImmersive(false);
+    }
   };
 
   return (
     <nav
       className={cn(
-        "w-full md:w-20 bg-brand-surface border-b md:border-r border-white/5 flex flex-row md:flex-col items-center py-4 md:py-8 sticky top-0 z-50 transition-all duration-500",
+        "w-full md:w-20 bg-brand-surface/80 backdrop-blur-xl border-b md:border-r border-white/5 flex flex-row md:flex-col items-center py-3 md:py-8 sticky top-0 z-50 transition-all duration-500",
+
+        // UX IMMERSIVE MODE (soft fade, pas de blocage)
         isImmersive &&
           activeTab === "live" &&
-          "md:w-0 md:opacity-0 -translate-x-full md:pointer-events-none"
+          "md:opacity-20 md:scale-95 md:hover:opacity-100"
       )}
     >
       {/* LOGO */}
-      <div className="hidden md:flex mb-12">
+      <div className="hidden md:flex mb-10">
         <img
           src={masterHoopLogo}
           alt="Master Hoop"
-          className="h-12 w-12 rounded-xl object-cover ring-1 ring-white/10 shadow-lg shadow-brand-orange/30"
+          className="h-11 w-11 rounded-xl object-cover ring-1 ring-white/10 shadow-lg shadow-brand-orange/30"
         />
       </div>
 
       {/* NAV ITEMS */}
-      <div className="flex flex-row md:flex-col gap-6 px-4 md:px-0 w-full justify-around md:justify-start">
+      <div className="flex flex-row md:flex-col gap-5 px-3 md:px-0 w-full justify-around md:justify-start">
+        
         <NavButton
           active={activeTab === "live"}
           onClick={() => navigate("live")}
