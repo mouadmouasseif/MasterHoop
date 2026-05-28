@@ -38,28 +38,27 @@ service cloud.firestore {
         && request.resource.data.userId == resource.data.userId;
     }
 
-    // --- Sessions ---
-    match /sessions/{sessionId} {
+    // --- Private user sessions ---
+    match /users/{userId}/sessions/{sessionId} {
       function isValidSession(data) {
         return data.userId == request.auth.uid
-          && (data.timestamp is timestamp || data.timestamp is string)
-          && (data.get('accuracy', 0) is number)
-          && (data.get('madeShots', 0) is int)
-          && (data.get('missedShots', 0) is int)
-          && (data.get('dribbleCount', 0) is int)
-          && (data.get('avgPower', 0) is number)
-          && (data.get('notes', '') is string)
-          && (data.get('duration', '') is string)
-          && (data.get('videoUrl', '') is string);
+          && (data.get('duration', 0) is number)
+          && (data.get('drillName', '') is string)
+          && (data.get('score', 0) is number)
+          && (data.get('aiFeedback', '') is string)
+          && (data.get('videoUrl', '') is string)
+          && (data.get('thumbnailUrl', '') is string)
+          && (data.get('strengths', []) is list)
+          && (data.get('weaknesses', []) is list)
+          && (data.get('suggestions', []) is list)
+          && (data.get('metrics', {}) is map);
       }
 
-      allow list: if isSignedIn() && resource.data.userId == request.auth.uid;
-      allow get: if isOwner(resource.data.userId);
-      allow create: if isSignedIn() && isValidSession(request.resource.data)
-        && request.resource.data.userId == request.auth.uid;
-      allow update: if isOwner(resource.data.userId) && isValidSession(request.resource.data)
+      allow list, get: if isOwner(userId);
+      allow create: if isOwner(userId) && isValidSession(request.resource.data);
+      allow update: if isOwner(userId) && isValidSession(request.resource.data)
         && request.resource.data.userId == resource.data.userId;
-      allow delete: if isOwner(resource.data.userId);
+      allow delete: if isOwner(userId);
     }
   }
 }

@@ -1,10 +1,14 @@
 import React, { useRef, useEffect, useState, useCallback } from 'react';
-import { Play, Pause, Square, Activity, Target, Settings as SettingsIcon, Video, RefreshCw, ChevronRight, BarChart2, X, ArrowUpLeft, ArrowUpRight } from 'lucide-react';
+import { Play, Pause, Square, Activity, Target, Settings as SettingsIcon, Video, RefreshCw, ChevronRight, BarChart2, X, ArrowUpLeft, ArrowUpRight, Volume2, VolumeX } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { ScatterChart, Scatter, XAxis, YAxis, ZAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 import { cn } from '@/src/lib/utils';
 import { PoseAnalyzer, PoseMetrics } from '@/src/lib/poseDetection';
 import { Drill } from '@/src/components/DrillTutorials';
+import CameraSelector from '@/src/components/CameraSelector';
+import FullscreenButton from '@/src/components/FullscreenButton';
+import ScanButton from '@/src/components/ScanButton';
+import ScoreBoard from '@/src/components/ScoreBoard';
 import * as cocoSsd from '@tensorflow-models/coco-ssd';
 
 interface CameraRecorderProps {
@@ -15,6 +19,10 @@ interface CameraRecorderProps {
   selectedMoves?: string[];
   currentDrill?: Drill | null;
   onClearDrill?: () => void;
+  madeCount?: number;
+  missCount?: number;
+  onMadeShot?: () => void;
+  onMissedShot?: () => void;
 }
 
 type CourtType = '5v5' | '3v3' | 'none';
@@ -26,7 +34,11 @@ export function CameraRecorder({
   onMetricsUpdate,
   selectedMoves: externalSelectedMoves,
   currentDrill,
-  onClearDrill
+  onClearDrill,
+  madeCount = 0,
+  missCount = 0,
+  onMadeShot,
+  onMissedShot
 }: CameraRecorderProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -43,9 +55,13 @@ export function CameraRecorder({
   const [isAnalyzerReady, setIsAnalyzerReady] = useState(false);
   const [devices, setDevices] = useState<MediaDeviceInfo[]>([]);
   const [selectedDeviceId, setSelectedDeviceId] = useState<string>('');
+  const [activeFacingMode, setActiveFacingMode] = useState<'user' | 'environment' | 'external'>('environment');
   const [courtType, setCourtType] = useState<CourtType>('3v3');
   const [videoQuality, setVideoQuality] = useState<'480p' | '720p' | '1080p'>('720p');
   const [showSettings, setShowSettings] = useState(false);
+  const [isPseudoFullscreen, setIsPseudoFullscreen] = useState(false);
+  const [aiSensitivity, setAiSensitivity] = useState(0.72);
+  const [audioEnabled, setAudioEnabled] = useState(false);
   const [showLandscapeHint, setShowLandscapeHint] = useState(false);
   const [activeMove, setActiveMove] = useState<{ name: string; metrics: any; timestamp: number } | null>(null);
   const [internalSelectedMoves, setInternalSelectedMoves] = useState<string[]>(['JUMPSHOT', 'CROSSOVER', 'FADEAWAY', 'DRIBBLE', 'PASS', 'REBOUND', 'HESITATION', 'EUROSTEP']);
@@ -76,6 +92,52 @@ export function CameraRecorder({
     }
   }, []);
 
+  const toggleFullscreen = useCallback(async () => {
+    const target = cameraShellRef.current;
+    if (!target) return;
+
+    try {
+      if (document.fullscreenElement) {
+        await document.exitFullscreen();
+        setIsPseudoFullscreen(false);
+        return;
+      }
+
+      if (target.requestFullscreen) {
+        await target.requestFullscreen();
+        setIsPseudoFullscreen(false);
+      } else {
+        setIsPseudoFullscreen((value) => !value);
+      }
+
+      const orientation = screen.orientation as ScreenOrientation & {
+        lock?: (orientation: 'landscape') => Promise<void>;
+      };
+      await orientation.lock?.('landscape').catch(() => undefined);
+    } catch (error) {
+      console.warn('Fullscreen unavailable, using mobile fallback:', error);
+      setIsPseudoFullscreen((value) => !value);
+    }
+  }, []);
+
+  useEffect(() => {
+    const syncFullscreen = () => setIsPseudoFullscreen(false);
+    document.addEventListener('fullscreenchange', syncFullscreen);
+    return () => document.removeEventListener('fullscreenchange', syncFullscreen);
+  }, []);
+
+  const refreshCameras = useCallback(async () => {
+    if (!navigator.mediaDevices?.enumerateDevices) {
+      setError("Votre navigateur ne supporte pas la detection automatique des cameras.");
+      return;
+    }
+
+    const mediaDevices = await navigator.mediaDevices.enumerateDevices();
+    const videoDevices = mediaDevices.filter((device) => device.kind === 'videoinput');
+    setDevices(videoDevices);
+    setSelectedDeviceId((current) => current || videoDevices[0]?.deviceId || '');
+  }, []);
+
   // Initialize Pose Analyzer
   useEffect(() => {
     const analyzer = new PoseAnalyzer();
@@ -84,17 +146,12 @@ export function CameraRecorder({
       setIsAnalyzerReady(true);
     });
     
-    // Get camera devices
-    navigator.mediaDevices.enumerateDevices().then(devices => {
-      const videoDevices = devices.filter(d => d.kind === 'videoinput');
-      setDevices(videoDevices);
-      if (videoDevices.length > 0) setSelectedDeviceId(videoDevices[0].deviceId);
-    });
+    refreshCameras().catch((error) => console.warn('Camera enumeration failed:', error));
 
     return () => {
       if (requestRef.current) cancelAnimationFrame(requestRef.current);
     };
-  }, []);
+  }, [refreshCameras]);
 
   const [lastDribbleTime, setLastDribbleTime] = useState(0);
   const [dribbleStreak, setDribbleStreak] = useState(0);
@@ -152,6 +209,8 @@ export function CameraRecorder({
 
   useEffect(() => {
     let currentStream: MediaStream | null = null;
+    let cancelled = false;
+
     async function setupCamera() {
       setError(null);
       try {
@@ -161,37 +220,62 @@ export function CameraRecorder({
           '1080p': { width: 1920, height: 1080 }
         };
         const res = qualityConfig[videoQuality];
-        
-        const constraints = { 
+
+        const constraints: MediaStreamConstraints = {
           video: {
             deviceId: selectedDeviceId ? { exact: selectedDeviceId } : undefined,
+            facingMode: selectedDeviceId ? undefined : { ideal: 'environment' },
             width: { ideal: res.width },
-            height: { ideal: res.height }
-          }, 
-          audio: false 
+            height: { ideal: res.height },
+            frameRate: { ideal: 30, max: 30 }
+          },
+          audio: audioEnabled
         };
-        
+
         const userStream = await navigator.mediaDevices.getUserMedia(constraints);
+        if (cancelled) {
+          userStream.getTracks().forEach(track => track.stop());
+          return;
+        }
+
         currentStream = userStream;
         setStream(userStream);
+        const track = userStream.getVideoTracks()[0];
+        const settings = track?.getSettings?.();
+        const label = track?.label?.toLowerCase() || '';
+        setActiveFacingMode(
+          settings?.facingMode === 'user' || label.includes('front') || label.includes('face')
+            ? 'user'
+            : label.includes('usb') || label.includes('webcam')
+            ? 'external'
+            : 'environment'
+        );
+
         if (videoRef.current) {
+          videoRef.current.pause();
           videoRef.current.srcObject = userStream;
+          await videoRef.current.play().catch(() => undefined);
         }
+        await refreshCameras();
         requestLandscapeMode();
       } catch (err) {
         console.error("Error accessing camera:", err);
-        setError("Impossible d'accéder à la caméra. Vérifiez les permissions.");
+        setError("Impossible d'acceder a la camera. Verifiez les permissions et reessayez.");
       }
     }
 
     setupCamera();
 
     return () => {
+      cancelled = true;
       if (currentStream) {
         currentStream.getTracks().forEach(track => track.stop());
       }
+      if (videoRef.current) {
+        videoRef.current.srcObject = null;
+      }
     };
-  }, [retryCount, selectedDeviceId, videoQuality, requestLandscapeMode]);
+  }, [retryCount, selectedDeviceId, videoQuality, audioEnabled, requestLandscapeMode, refreshCameras]);
 
   const drawCourtMiniMap = (ctx: CanvasRenderingContext2D, type: CourtType) => {
     if (type === 'none') return;
@@ -515,7 +599,7 @@ export function CameraRecorder({
       ctx.stroke();
 
       // Power Label
-      const powerLabel = power > 75 ? "EXPLOSIF" : power > 40 ? "FORT" : "CONTRÔLÉ";
+      const powerLabel = power > 75 ? "EXPLOSIF" : power > 40 ? "FORT" : "CONTRأ”Lأ‰";
       ctx.fillStyle = power > 75 ? '#FF6B00' : '#00FF94';
       ctx.font = 'bold 10px Mono';
       ctx.textAlign = 'center';
@@ -706,7 +790,7 @@ export function CameraRecorder({
         ctx.shadowBlur = 0;
         ctx.font = 'bold 9px Mono';
         ctx.fillStyle = moveColor;
-        ctx.fillText('MOVE DÉTECTÉ', w / 2, bY + 12);
+        ctx.fillText('MOVE Dأ‰TECTأ‰', w / 2, bY + 12);
         
         ctx.restore();
       }
@@ -888,18 +972,21 @@ export function CameraRecorder({
   const startRecording = () => {
     if (!stream) return;
     chunksRef.current = [];
-    const mediaRecorder = new MediaRecorder(stream, {
-      mimeType: 'video/webm;codecs=vp8,opus'
-    });
+    const mimeType = MediaRecorder.isTypeSupported('video/webm;codecs=vp8,opus')
+      ? 'video/webm;codecs=vp8,opus'
+      : MediaRecorder.isTypeSupported('video/webm')
+      ? 'video/webm'
+      : '';
+    const mediaRecorder = new MediaRecorder(stream, mimeType ? { mimeType } : undefined);
     mediaRecorder.ondataavailable = (event) => {
       if (event.data.size > 0) chunksRef.current.push(event.data);
     };
     mediaRecorder.onstop = () => {
-      const blob = new Blob(chunksRef.current, { type: 'video/webm' });
+      const blob = new Blob(chunksRef.current, { type: mediaRecorder.mimeType || 'video/webm' });
       onRecordingComplete(blob);
       mediaRecorderRef.current = null;
     };
-    mediaRecorder.start();
+    mediaRecorder.start(1000);
     mediaRecorderRef.current = mediaRecorder;
   };
 
@@ -911,21 +998,30 @@ export function CameraRecorder({
     return (
       <div className="w-full h-full flex flex-col items-center justify-center bg-brand-surface rounded-2xl border border-white/10 p-8 text-center">
         <Square className="w-12 h-12 mx-auto text-red-500 mb-4" strokeWidth={1.5} />
-        <h3 className="text-xl font-bold mb-2">Accès Caméra</h3>
+        <h3 className="text-xl font-bold mb-2">Accأ¨s Camأ©ra</h3>
         <p className="text-white/40 mb-6 text-sm">{error}</p>
-        <button onClick={() => setRetryCount(prev => prev + 1)} className="px-6 py-3 bg-brand-blue text-white rounded-xl font-bold">Réessayer</button>
+        <button onClick={() => setRetryCount(prev => prev + 1)} className="px-6 py-3 bg-brand-blue text-white rounded-xl font-bold">Rأ©essayer</button>
       </div>
     );
   }
 
   return (
-    <div ref={cameraShellRef} className="relative w-full h-full bg-black rounded-2xl overflow-hidden group pointer-events-none">
+    <div
+      ref={cameraShellRef}
+      className={cn(
+        "relative w-full h-full bg-black rounded-2xl overflow-hidden group pointer-events-none",
+        isPseudoFullscreen && "fixed inset-0 z-[90] h-[100dvh] w-screen rounded-none"
+      )}
+      style={{
+        paddingBottom: isPseudoFullscreen ? 'env(safe-area-inset-bottom)' : undefined,
+      }}
+    >
       <video 
         ref={videoRef} 
         autoPlay 
         muted 
         playsInline 
-        className="w-full h-full object-cover mirror pointer-events-none"
+        className={cn("w-full h-full object-cover pointer-events-none", activeFacingMode === 'user' && "mirror")}
       />
       <canvas
         ref={canvasRef}
@@ -951,15 +1047,15 @@ export function CameraRecorder({
       {/* Header */}
       <div className="text-center">
         <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-brand-orange/20 border border-brand-orange/20 mb-4">
-          📱
+          ًں“±
         </div>
 
         <h3 className="text-sm font-black uppercase tracking-widest text-brand-orange">
-          Mode paysage recommandé
+          Mode paysage recommandأ©
         </h3>
 
         <p className="mt-3 text-sm text-white/70 leading-relaxed">
-          Sur mobile/tablette, tourne ton téléphone horizontalement pour une meilleure détection des lignes
+          Sur mobile/tablette, tourne ton tأ©lأ©phone horizontalement pour une meilleure dأ©tection des lignes
           <span className="text-brand-orange font-bold"> 2PT / 3PT</span>.
         </p>
       </div>
@@ -969,7 +1065,7 @@ export function CameraRecorder({
         onClick={requestLandscapeMode}
         className="mt-5 w-full rounded-2xl bg-brand-orange px-4 py-3 text-sm font-black uppercase tracking-wider text-white shadow-lg hover:scale-[1.02] active:scale-[0.98] transition"
       >
-        Plein écran paysage
+        Plein أ©cran paysage
       </button>
 
       {/* Skip text */}
@@ -1035,8 +1131,8 @@ export function CameraRecorder({
                     currentDrill.id === 'shot-mechanics' && activeMove.name === 'JUMPSHOT' ? 
                     (activeMove.metrics.elbow < 85 ? "Levez plus votre coude pour un meilleur arc" : "Excellent angle de tir !") :
                     currentDrill.id === 'crossover-speed' && activeMove.name === 'CROSSOVER' ?
-                    (activeMove.metrics.power < 10 ? "Soyez plus explosif sur le dribble !" : "Crossover très bas et rapide, parfait !") :
-                    "Maintenez votre focus sur les points clés."
+                    (activeMove.metrics.power < 10 ? "Soyez plus explosif sur le dribble !" : "Crossover trأ¨s bas et rapide, parfait !") :
+                    "Maintenez votre focus sur les points clأ©s."
                   ) : "Commencez l'exercice pour recevoir du feedback..."}
                 </motion.p>
               </div>
@@ -1054,65 +1150,114 @@ export function CameraRecorder({
         </div>
       )}
 
-      {/* Controls Overlay */}
-      <div className="absolute top-6 right-6 flex flex-col items-end gap-3 z-30 pointer-events-auto">
-        <div className="flex gap-2">
+      {/* Premium HUD */}
+      <div className="absolute inset-x-3 bottom-[calc(env(safe-area-inset-bottom)+1rem)] z-40 flex flex-col items-center gap-3 pointer-events-none sm:bottom-5">
+        <ScoreBoard madeCount={madeCount} missCount={missCount} />
+
+        <div className="pointer-events-auto flex max-w-full flex-wrap items-center justify-center gap-2 rounded-3xl border border-white/10 bg-black/35 p-2 shadow-2xl shadow-black/40 backdrop-blur-2xl sm:gap-3">
           <motion.button
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            onClick={() => {
-               setIsScanning(true);
-               setTimeout(() => setIsScanning(false), 3000);
-            }}
+            whileHover={{ scale: 1.06, y: -1 }}
+            whileTap={{ scale: 0.94 }}
+            onClick={() => onRecordingChange(!isRecording)}
             className={cn(
-              "p-3 rounded-xl shadow-xl border flex items-center gap-2 transition-all",
-              isScanning ? "bg-white text-black animate-pulse" : "bg-brand-blue text-white border-brand-blue/30"
+              "grid h-12 w-12 place-items-center rounded-2xl border shadow-xl backdrop-blur-xl transition sm:h-14 sm:w-14",
+              isRecording
+                ? "border-red-400/40 bg-red-500/85 text-white shadow-red-500/25"
+                : "border-white/10 bg-white text-black shadow-white/10 hover:shadow-brand-neon/25"
+            )}
+            aria-label={isRecording ? "Stop recording" : "Start recording"}
+            title={isRecording ? "Stop" : "Play"}
+          >
+            {isRecording ? <Square size={21} fill="currentColor" /> : <Play size={22} fill="currentColor" />}
+          </motion.button>
+
+          <FullscreenButton active={Boolean(document.fullscreenElement) || isPseudoFullscreen} onClick={toggleFullscreen} />
+
+          <motion.button
+            whileHover={{ scale: 1.06, rotate: 22, y: -1 }}
+            whileTap={{ scale: 0.94 }}
+            onClick={() => setShowSettings((value) => !value)}
+            className={cn(
+              "grid h-12 w-12 place-items-center rounded-2xl border border-white/10 bg-black/55 text-white shadow-xl shadow-black/30 backdrop-blur-xl transition hover:border-brand-orange/50 hover:bg-brand-orange/15 hover:text-brand-orange sm:h-14 sm:w-14",
+              showSettings && "border-brand-orange/55 bg-brand-orange/15 text-brand-orange shadow-brand-orange/20"
+            )}
+            aria-label="Open settings"
+            title="Settings"
+          >
+            <SettingsIcon size={21} />
+          </motion.button>
+
+          <ScanButton
+            active={isScanning}
+            onClick={() => {
+              setIsScanning((value) => !value);
+              if (!isScanning) {
+                window.setTimeout(() => setIsScanning(false), 3200);
+              }
+            }}
+          />
+
+          <div className="flex items-center gap-2 border-l border-white/10 pl-2">
+            <motion.button
+              whileTap={{ scale: 0.94 }}
+              onClick={onMissedShot}
+              className="min-h-12 rounded-2xl border border-red-400/20 bg-red-500/15 px-3 text-xs font-black uppercase tracking-widest text-red-200 shadow-lg shadow-red-500/10 transition hover:bg-red-500/25 sm:min-h-14 sm:px-4"
+            >
+              Miss
+            </motion.button>
+            <motion.button
+              whileTap={{ scale: 0.94 }}
+              onClick={onMadeShot}
+              className="min-h-12 rounded-2xl border border-brand-neon/20 bg-brand-neon/15 px-3 text-xs font-black uppercase tracking-widest text-brand-neon shadow-lg shadow-brand-neon/10 transition hover:bg-brand-neon/25 sm:min-h-14 sm:px-4"
+            >
+              Made
+            </motion.button>
+          </div>
+        </div>
+
+        <AnimatePresence>
+          {isScanning && (
+            <motion.div
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 8 }}
+              className="pointer-events-none rounded-full border border-brand-neon/20 bg-black/45 px-4 py-2 text-[10px] font-black uppercase tracking-[0.24em] text-brand-neon backdrop-blur-xl"
+            >
+              Terrain scan active
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+
+      <div className="absolute right-4 top-4 z-30 hidden max-w-[calc(100%-2rem)] items-center gap-1.5 rounded-2xl border border-white/10 bg-black/35 p-1 backdrop-blur-xl pointer-events-auto md:flex">
+        {[
+          { id: 'DRIBBLE', label: 'Dribble' },
+          { id: 'JUMPSHOT', label: 'Tir' },
+          { id: 'CROSSOVER', label: 'Cross' },
+          { id: 'FADEAWAY', label: 'Fade' },
+          { id: 'HESITATION', label: 'Hesi' },
+          { id: 'EUROSTEP', label: 'Euro' },
+          { id: 'PASS', label: 'Passe' },
+          { id: 'REBOUND', label: 'Rebond' }
+        ].map((move, mIdx) => (
+          <button
+            key={`${move.id}-${mIdx}`}
+            onClick={() => setInternalSelectedMoves(prev =>
+              prev.includes(move.id) ? prev.filter(id => id !== move.id) : [...prev, move.id]
+            )}
+            className={cn(
+              "rounded-xl px-2.5 py-2 text-[10px] font-bold uppercase tracking-tighter transition-all whitespace-nowrap",
+              selectedMoves.includes(move.id)
+                ? "bg-brand-blue/85 text-white shadow-lg shadow-brand-blue/20"
+                : "text-white/40 hover:bg-white/5 hover:text-white/70"
             )}
           >
-             <Activity size={18} />
-             <span className="text-[10px] font-bold uppercase tracking-widest hidden sm:inline">
-               {isScanning ? "Scanning..." : "Scanner Terrain"}
-             </span>
-          </motion.button>
+            {move.label}
+          </button>
+        ))}
+      </div>
 
-          {/* Move Filters */}
-          <div className="hidden md:flex items-center gap-1.5 p-1 bg-black/40 backdrop-blur-md rounded-xl border border-white/10 mr-2">
-            {[
-              { id: 'DRIBBLE', label: 'Dribble' },
-              { id: 'JUMPSHOT', label: 'Tir' },
-              { id: 'CROSSOVER', label: 'Cross' },
-              { id: 'FADEAWAY', label: 'Fade' },
-              { id: 'HESITATION', label: 'Hesi' },
-              { id: 'EUROSTEP', label: 'Euro' },
-              { id: 'PASS', label: 'Passe' },
-              { id: 'REBOUND', label: 'Rebond' }
-            ].map((move, mIdx) => (
-              <button
-                key={`${move.id}-${mIdx}`}
-                onClick={() => setInternalSelectedMoves(prev => 
-                  prev.includes(move.id) ? prev.filter(id => id !== move.id) : [...prev, move.id]
-                )}
-                className={cn(
-                  "px-2.5 py-1.5 rounded-lg text-[10px] font-bold transition-all uppercase tracking-tighter whitespace-nowrap",
-                  selectedMoves.includes(move.id) 
-                    ? "bg-brand-blue text-white shadow-lg shadow-brand-blue/20" 
-                    : "text-white/40 hover:text-white/60 hover:bg-white/5"
-                )}
-              >
-                {move.label}
-              </button>
-            ))}
-          </div>
-
-          <motion.button 
-            whileHover={{ scale: 1.05, rotate: 90 }}
-            whileTap={{ scale: 0.95 }}
-            onClick={() => setShowSettings(!showSettings)}
-            className="p-3 bg-black/40 backdrop-blur-md rounded-xl border border-white/10 text-white hover:bg-black/60 transition-all shadow-xl"
-          >
-            <SettingsIcon size={20} />
-          </motion.button>
-        </div>
+      <div className="absolute top-4 right-4 flex flex-col items-end gap-3 z-50 pointer-events-auto">
         
         <AnimatePresence>
           {showSetupGuide && (
@@ -1128,25 +1273,64 @@ export function CameraRecorder({
               animate={{ opacity: 1, x: 0, scale: 1 }}
               exit={{ opacity: 0, x: 20, scale: 0.95 }}
               transition={{ type: "spring", damping: 20, stiffness: 300 }}
-              className="glass-card p-5 min-w-[240px] border-white/10 flex flex-col gap-5 shadow-2xl origin-top-right"
+              className="glass-card max-h-[calc(100dvh-2rem)] w-[min(22rem,calc(100vw-2rem))] overflow-y-auto border-white/10 p-5 flex flex-col gap-5 shadow-2xl origin-top-right"
             >
             <div>
-              <label className="text-[10px] font-bold text-white/40 uppercase mb-2 block">Caméra</label>
-              <select 
-                value={selectedDeviceId}
-                onChange={(e) => setSelectedDeviceId(e.target.value)}
-                className="w-full bg-white/5 border border-white/10 rounded-lg p-2 text-xs text-white outline-none"
+              <label className="text-[10px] font-bold text-white/40 uppercase mb-2 block">Camأ©ra</label>
+              <CameraSelector
+                devices={devices}
+                selectedDeviceId={selectedDeviceId}
+                onSelect={setSelectedDeviceId}
+                onRefresh={() => refreshCameras().catch((error) => console.warn('Camera refresh failed:', error))}
+              />
+            </div>
+
+            <div>
+              <label className="text-[10px] font-bold text-white/40 uppercase mb-2 block tracking-widest">AI Sensitivity</label>
+              <input
+                type="range"
+                min={0.35}
+                max={1}
+                step={0.01}
+                value={aiSensitivity}
+                onChange={(event) => setAiSensitivity(Number(event.target.value))}
+                className="w-full accent-brand-neon"
+              />
+              <div className="mt-1 flex items-center justify-between text-[9px] font-bold uppercase tracking-widest text-white/35">
+                <span>Stable</span>
+                <span className="text-brand-neon">{Math.round(aiSensitivity * 100)}%</span>
+                <span>Sharp</span>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={toggleFullscreen}
+                className="rounded-xl border border-white/10 bg-white/5 px-3 py-3 text-[10px] font-black uppercase tracking-widest text-white/65 transition hover:border-brand-orange/40 hover:text-brand-orange"
               >
-                {devices.map((d, dIdx) => <option key={`${d.deviceId || 'cam'}-${dIdx}`} value={d.deviceId}>{d.label || `Camera ${dIdx + 1}`}</option>)}
-              </select>
+                Fullscreen
+              </button>
+              <button
+                type="button"
+                onClick={() => setAudioEnabled((value) => !value)}
+                className={cn(
+                  "flex items-center justify-center gap-2 rounded-xl border px-3 py-3 text-[10px] font-black uppercase tracking-widest transition",
+                  audioEnabled
+                    ? "border-brand-neon/30 bg-brand-neon/10 text-brand-neon"
+                    : "border-white/10 bg-white/5 text-white/55"
+                )}
+              >
+                {audioEnabled ? <Volume2 size={14} /> : <VolumeX size={14} />} Audio
+              </button>
             </div>
             <div>
               <label className="text-[10px] font-bold text-white/40 uppercase mb-2 block">Perspective Terrain</label>
               <div className="grid grid-cols-3 gap-2">
                 {([
                   { id: 'front', label: 'Face' },
-                  { id: 'side-left', label: 'Côté G' },
-                  { id: 'side-right', label: 'Côté D' }
+                  { id: 'side-left', label: 'Cأ´tأ© G' },
+                  { id: 'side-right', label: 'Cأ´tأ© D' }
                 ] as const).map(p => (
                   <button 
                     key={p.id}
@@ -1215,7 +1399,7 @@ export function CameraRecorder({
                   onChange={(v) => { if(analyzerRef.current) analyzerRef.current.courtLines.keyWidth = v; }} 
                 />
                 <CalibrationSlider 
-                  label="Ligne de Lancé Franc (Y)" 
+                  label="Ligne de Lancأ© Franc (Y)" 
                   value={analyzerRef.current?.courtLines.freeThrowLineY || 0.42} 
                   min={0.2} max={0.8}
                   onChange={(v) => { if(analyzerRef.current) analyzerRef.current.courtLines.freeThrowLineY = v; }} 
@@ -1227,7 +1411,7 @@ export function CameraRecorder({
                   onChange={(v) => { if(analyzerRef.current) analyzerRef.current.courtLines.baselineY = v; }} 
                 />
                 <CalibrationSlider 
-                  label="Lignes Latérales (Padding)" 
+                  label="Lignes Latأ©rales (Padding)" 
                   value={analyzerRef.current?.courtLines.sidelinePadding || 0.05} 
                   min={0} max={0.2}
                   onChange={(v) => { if(analyzerRef.current) analyzerRef.current.courtLines.sidelinePadding = v; }} 
@@ -1236,7 +1420,7 @@ export function CameraRecorder({
             </div>
 
             <div>
-              <label className="text-[10px] font-bold text-white/40 uppercase mb-2 block tracking-widest">Qualité Vidéo</label>
+              <label className="text-[10px] font-bold text-white/40 uppercase mb-2 block tracking-widest">Qualitأ© Vidأ©o</label>
               <div className="grid grid-cols-3 gap-2 mb-2">
                 {(['480p', '720p', '1080p'] as const).map(q => (
                   <motion.button 
@@ -1254,9 +1438,9 @@ export function CameraRecorder({
                 ))}
               </div>
               <p className="text-[8px] text-white/30 italic leading-relaxed px-1">
-                {videoQuality === '480p' && "Performance max, idéal pour vieux appareils."}
-                {videoQuality === '720p' && "Équilibre parfait entre clarté et fluidité AI."}
-                {videoQuality === '1080p' && "Détails max, nécessite une connexion et un CPU forts."}
+                {videoQuality === '480p' && "Performance max, idأ©al pour vieux appareils."}
+                {videoQuality === '720p' && "أ‰quilibre parfait entre clartأ© et fluiditأ© AI."}
+                {videoQuality === '1080p' && "Dأ©tails max, nأ©cessite une connexion et un CPU forts."}
               </p>
             </div>
           </motion.div>
@@ -1318,7 +1502,7 @@ export function CameraRecorder({
                   exit={{ scale: 0.8, opacity: 0 }}
                   className="px-3 py-1 bg-brand-blue text-white text-[10px] font-bold rounded-lg flex items-center gap-2 shadow-lg shadow-brand-blue/20"
                 >
-                  <RefreshCw size={12} className="animate-spin" /> BALLON DÉTECTÉ
+                  <RefreshCw size={12} className="animate-spin" /> BALLON Dأ‰TECTأ‰
                 </motion.div>
               )}
               {metrics.isShooting && (
@@ -1368,42 +1552,42 @@ export function CameraRecorder({
                            />
                         </div>
                         <span className="text-[7px] text-white/30 italic">
-                          {activeMove.metrics.power > 75 ? "INTENSITÉ MAX : Risque de perte de contrôle plus élevé." : "OPTIMAL : Équilibre parfait entre vitesse et sécurité."}
+                          {activeMove.metrics.power > 75 ? "INTENSITأ‰ MAX : Risque de perte de contrأ´le plus أ©levأ©." : "OPTIMAL : أ‰quilibre parfait entre vitesse et sأ©curitأ©."}
                         </span>
                       </div>
                       <TechnicalMetric label="Rythme" value={`${activeMove.metrics.rhythm} BPM`} />
-                      <TechnicalMetric label="Contrôle" value="98%" color="text-brand-neon" />
+                      <TechnicalMetric label="Contrأ´le" value="98%" color="text-brand-neon" />
                       <TechnicalMetric label="Dribble #" value={activeMove.metrics.count} />
                     </>
                   ) : activeMove.name === 'PASS' ? (
                     <>
-                      <TechnicalMetric label="Vélocité X" value={`${activeMove.metrics.vx} px/s`} />
-                      <TechnicalMetric label="Précision" value="88%" color="text-brand-neon" />
+                      <TechnicalMetric label="Vأ©locitأ© X" value={`${activeMove.metrics.vx} px/s`} />
+                      <TechnicalMetric label="Prأ©cision" value="88%" color="text-brand-neon" />
                       <TechnicalMetric label="Type" value="Chest Pass" />
                     </>
                   ) : activeMove.name === 'REBOUND' ? (
                     <>
-                      <TechnicalMetric label="Impact" value="ÉLEVÉ" color="text-brand-neon" />
+                      <TechnicalMetric label="Impact" value="أ‰LEVأ‰" color="text-brand-neon" />
                       <TechnicalMetric label="Timing" value="PARFAIT" />
                       <TechnicalMetric label="Position" value="Inner" />
                     </>
                   ) : activeMove.name === 'HESITATION' ? (
                     <>
-                      <TechnicalMetric label="Décalage" value="DÉTECTÉ" color="text-brand-neon" />
+                      <TechnicalMetric label="Dأ©calage" value="Dأ‰TECTأ‰" color="text-brand-neon" />
                       <TechnicalMetric label="Rhytme" value={`${activeMove.metrics.rhythm} BPM`} />
                       <TechnicalMetric label="Puissance" value={`${activeMove.metrics.power}%`} />
                     </>
                   ) : activeMove.name === 'EUROSTEP' ? (
                     <>
                       <TechnicalMetric label="Amplitude" value="LARGE" color="text-brand-neon" />
-                      <TechnicalMetric label="Angle Genou" value={`${activeMove.metrics.knee}°`} />
-                      <TechnicalMetric label="Stabilité" value="EXCELLENTE" />
+                      <TechnicalMetric label="Angle Genou" value={`${activeMove.metrics.knee}آ°`} />
+                      <TechnicalMetric label="Stabilitأ©" value="EXCELLENTE" />
                     </>
                   ) : (
                     <>
-                      <TechnicalMetric label="Angle Coude" value={`${activeMove.metrics.elbow}°`} />
-                      <TechnicalMetric label="Angle Genou" value={`${activeMove.metrics.knee}°`} />
-                      <TechnicalMetric label="Stabilité" value="94%" color="text-brand-neon" />
+                      <TechnicalMetric label="Angle Coude" value={`${activeMove.metrics.elbow}آ°`} />
+                      <TechnicalMetric label="Angle Genou" value={`${activeMove.metrics.knee}آ°`} />
+                      <TechnicalMetric label="Stabilitأ©" value="94%" color="text-brand-neon" />
                       <TechnicalMetric label="Puissance" value={activeMove.metrics.power ? `${activeMove.metrics.power}%` : "0.42s"} />
                     </>
                   )}
@@ -1491,7 +1675,7 @@ function CourtSetupGuide({ onComplete, courtType }: { onComplete: () => void, co
         <div className="p-6 border-b border-white/5 relative bg-black/20">
           <div className="text-center px-8">
             <h2 className="text-lg font-black text-white uppercase tracking-tighter italic">Installation HoopVision</h2>
-            <p className="text-white/40 text-[10px] font-bold uppercase mt-1 tracking-widest">Calibration Recommandée</p>
+            <p className="text-white/40 text-[10px] font-bold uppercase mt-1 tracking-widest">Calibration Recommandأ©e</p>
           </div>
           <button 
             onClick={onComplete}
@@ -1508,7 +1692,7 @@ function CourtSetupGuide({ onComplete, courtType }: { onComplete: () => void, co
   onClick={onComplete}
   className="absolute top-4 right-4 z-50 w-10 h-10 flex items-center justify-center rounded-full bg-white/10 hover:bg-red-500/80 transition-all duration-300 border border-white/10 backdrop-blur-md"
 >
-  ✕
+  âœ•
 </button>
 
   <div className="text-center space-y-4">
@@ -1520,13 +1704,13 @@ function CourtSetupGuide({ onComplete, courtType }: { onComplete: () => void, co
     </div>
 
     <p className="text-sm sm:text-base text-white/80 leading-relaxed font-medium italic">
-      "Placez votre téléphone dans le{" "}
+      "Placez votre tأ©lأ©phone dans le{" "}
       <span className="text-brand-blue font-black uppercase">
-        coin arrière
+        coin arriأ¨re
       </span>
       . L'angle doit couvrir{" "}
       <span className="underline decoration-brand-blue/40 underline-offset-4">
-        le panier et la ligne à 3 points
+        le panier et la ligne أ  3 points
       </span>
       ."
     </p>
@@ -1544,7 +1728,7 @@ function CourtSetupGuide({ onComplete, courtType }: { onComplete: () => void, co
 
       <div className="absolute top-4 left-4">
         <span className="text-[9px] font-black text-white/40 bg-black/40 px-2 py-1 rounded border border-white/5 uppercase tracking-widest">
-          Exemple Réel
+          Exemple Rأ©el
         </span>
       </div>
     </div>

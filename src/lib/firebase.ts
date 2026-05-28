@@ -5,6 +5,7 @@ import {
   signInWithPopup,
 } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
+import { getStorage } from "firebase/storage";
 import { getAnalytics } from "firebase/analytics";
 
 // Firebase config
@@ -58,6 +59,7 @@ if (typeof window !== "undefined") {
 // Exports
 export const auth = getAuth(app);
 export const db = getFirestore(app);
+export const storage = getStorage(app);
 
 // IMPORTANT: exports needed by App.tsx
 export const activeFirebaseAuthDomain =

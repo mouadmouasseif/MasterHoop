@@ -8,6 +8,8 @@ import { activeFirebaseAuthDomain, activeFirebaseProjectId, auth, db, loginWithG
 import Sidebar from "@/src/components/layout/Sidebar";
 import Navbar from "@/src/components/layout/Navbar";
 import Footer from "@/src/components/layout/Footer";
+import InstallPrompt from "@/src/components/InstallPrompt";
+import SplashScreen from "@/src/components/SplashScreen";
 
 import LandingPage from "@/src/pages/LandingPage";
 import LiveTraining from "@/src/pages/LiveTraining";
@@ -20,6 +22,8 @@ import ProfilePage from "@/src/pages/ProfilePage";
 import CompleteProfile from "@/src/components/auth/CompleteProfile";
 
 import type { ActiveTab, UserProfile } from "@/src/types";
+import type { PoseMetrics } from "@/src/lib/poseDetection";
+import { saveTrainingSession } from "@/src/services/sessionService";
 
 export default function App() {
 
@@ -34,6 +38,11 @@ export default function App() {
   const [authError, setAuthError] = useState<string | null>(null);
   const [isImmersive, setIsImmersive] = useState(false);
   const [showProfileModal, setShowProfileModal] = useState(false);
+  const [isRecording, setIsRecording] = useState(false);
+  const [liveMetrics, setLiveMetrics] = useState<PoseMetrics | null>(null);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [historyRefreshKey, setHistoryRefreshKey] = useState(0);
+  const [recordingStartedAt, setRecordingStartedAt] = useState<number | null>(null);
 
   // ================= AUTH LISTENER =================
   useEffect(() => {
@@ -100,13 +109,41 @@ export default function App() {
     }
   }, [authLoading]);
 
+  const handleRecordingChange = useCallback((recording: boolean) => {
+    setIsRecording(recording);
+    setRecordingStartedAt(recording ? Date.now() : null);
+  }, []);
+
+  const handleMetricsUpdate = useCallback((metrics: PoseMetrics) => {
+    setLiveMetrics(metrics);
+  }, []);
+
+  const handleRecordingComplete = useCallback(async (blob: Blob) => {
+    if (!user || blob.size === 0) return;
+
+    const duration = recordingStartedAt ? Math.max(1, Math.round((Date.now() - recordingStartedAt) / 1000)) : 0;
+    setUploadProgress(1);
+
+    try {
+      await saveTrainingSession({
+        userId: user.uid,
+        videoBlob: blob,
+        duration,
+        drillName: "Live Training",
+        metrics: liveMetrics,
+        onProgress: setUploadProgress,
+      });
+      setHistoryRefreshKey((key) => key + 1);
+    } catch (error) {
+      console.error("Recording upload failed:", error);
+    } finally {
+      window.setTimeout(() => setUploadProgress(0), 1200);
+    }
+  }, [liveMetrics, recordingStartedAt, user]);
+
   // ================= LOADING SCREEN =================
   if (loading) {
-    return (
-      <div className="h-screen flex items-center justify-center bg-brand-dark text-white">
-        Loading MasterHoop...
-      </div>
-    );
+    return <SplashScreen />;
   }
 
   // ================= AUTH GATE =================
@@ -129,6 +166,14 @@ export default function App() {
           <LiveTraining
             isImmersive={isImmersive}
             setIsImmersive={setIsImmersive}
+            user={user}
+            isRecording={isRecording}
+            setIsRecording={handleRecordingChange}
+            handleRecordingComplete={handleRecordingComplete}
+            handleMetricsUpdate={handleMetricsUpdate}
+            liveMetrics={liveMetrics}
+            uploadProgress={uploadProgress}
+            onSessionSaved={() => setHistoryRefreshKey((key) => key + 1)}
           />
         );
 
@@ -142,7 +187,7 @@ export default function App() {
         return <CoachPage />;
 
       case "history":
-        return <HistoryPage />;
+        return <HistoryPage user={user} refreshKey={historyRefreshKey} />;
 
       case "profile":
         return (
@@ -219,6 +264,8 @@ export default function App() {
           />
         )}
       </AnimatePresence>
+
+      <InstallPrompt />
 
     </div>
   );

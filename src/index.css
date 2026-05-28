@@ -8,6 +8,7 @@
   
   --color-brand-orange: #FF6B00;
   --color-brand-neon: #00FF94;
+  --color-brand-blue: #2F80FF;
   --color-brand-dark: #0A0A0B;
   --color-brand-surface: #161617;
 }
@@ -15,7 +16,20 @@
 @layer base {
   body {
     @apply bg-brand-dark text-white font-sans antialiased;
+    overscroll-behavior: none;
+    -webkit-tap-highlight-color: transparent;
   }
+}
+
+.mirror {
+  transform: scaleX(-1);
+}
+
+.line-clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 
 .perspective-1000 {

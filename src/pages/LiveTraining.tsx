@@ -1,4 +1,5 @@
 import { AnimatePresence, motion } from "motion/react";
+import { useEffect, useState } from "react";
 import {
   Area,
   AreaChart,
@@ -25,6 +26,7 @@ import {
 import { cn } from "@/src/lib/utils";
 import { getBasketballNews } from "@/src/services/geminiService";
 import { CameraRecorder } from "@/src/components/CameraRecorder";
+import VideoUploader from "@/src/components/VideoUploader";
 import AnalysisRow from "@/src/components/ui/AnalysisRow";
 import StatCard from "@/src/components/ui/StatCard";
 import { PERFORMANCE_DATA } from "@/src/constants/basketball";
@@ -33,6 +35,7 @@ export default function LiveTraining(props: any) {
   const {
     isImmersive = false,
     setIsImmersive = () => {},
+    user = null,
 
     isRecording = false,
     setIsRecording = () => {},
@@ -57,6 +60,8 @@ export default function LiveTraining(props: any) {
 
     activeCoachTip = null,
     liveMetrics = null,
+    uploadProgress = 0,
+    onSessionSaved = () => {},
 
     setActiveTab = () => {},
   } = props;
@@ -66,32 +71,40 @@ export default function LiveTraining(props: any) {
   // =========================
   const safeMetrics = liveMetrics || {};
 
-  const madeShots = safeMetrics.madeShots || 0;
-  const missedShots = safeMetrics.missedShots || 0;
+  const [madeCount, setMadeCount] = useState(0);
+  const [missCount, setMissCount] = useState(0);
+
+  useEffect(() => {
+    setMadeCount((current) => Math.max(current, Number(safeMetrics.madeShots || 0)));
+    setMissCount((current) => Math.max(current, Number(safeMetrics.missedShots || 0)));
+  }, [safeMetrics.madeShots, safeMetrics.missedShots]);
+
+  const madeShots = madeCount;
+  const missedShots = missCount;
+  const totalShots = madeCount + missCount;
 
   const scoreShot = (isMade: boolean) => {
+    const nextMade = isMade ? madeCount + 1 : madeCount;
+    const nextMiss = isMade ? missCount : missCount + 1;
+
+    setMadeCount(nextMade);
+    setMissCount(nextMiss);
+
     if (!handleMetricsUpdate) return;
 
     handleMetricsUpdate({
       ...safeMetrics,
-      madeShots: isMade ? madeShots + 1 : madeShots,
-      missedShots: !isMade ? missedShots + 1 : missedShots,
+      madeShots: nextMade,
+      missedShots: nextMiss,
     });
   };
 
   // =========================
   // AUTO SAVE WHEN STOP RECORD
   // =========================
-  const handleRecordToggle = async () => {
+  const handleRecordToggle = () => {
     const newState = !isRecording;
     setIsRecording(newState);
-
-    // STOP RECORDING → SAVE AUTO
-    if (!newState) {
-      const fakeBlob = new Blob([], { type: "video/webm" });
-
-      await handleRecordingComplete?.(fakeBlob);
-    }
   };
 
   return (
@@ -121,44 +134,22 @@ export default function LiveTraining(props: any) {
             }
             currentDrill={currentDrill}
             onClearDrill={() => setCurrentDrill(null)}
-          />
-
-          {/* ================= CONTROLS ================= */}
-          <div className="absolute bottom-6 left-6 flex items-center gap-4 bg-black/40 p-3 rounded-xl">
-
-            <button
-              onClick={handleRecordToggle}
-              className={cn(
-                "w-12 h-12 rounded-full flex items-center justify-center",
-                isRecording
-                  ? "bg-red-500"
-                  : "bg-white text-black"
-              )}
-            >
-              {isRecording ? <Square /> : <Play />}
-            </button>
-
-            {/* AUTO SCORING BUTTONS */}
-            <button
-              onClick={() => scoreShot(true)}
-              className="px-3 py-1 bg-green-500 rounded text-white text-xs"
-            >
-              +2 Made
-            </button>
-
-            <button
-              onClick={() => scoreShot(false)}
-              className="px-3 py-1 bg-red-500 rounded text-white text-xs"
-            >
-              Miss
-            </button>
-
-          </div>
-
-          {/* LIVE SCORE */}
-          <div className="absolute top-4 right-4 bg-black/60 p-3 rounded-xl text-white text-sm">
-            🏀 {madeShots} / {madeShots + missedShots}
-          </div>
+            madeCount={madeCount}
+            missCount={missCount}
+            onMadeShot={() => scoreShot(true)}
+            onMissedShot={() => scoreShot(false)}
+          />`r`n
+          {uploadProgress > 0 && (
+            <div className="absolute bottom-24 left-6 right-6 z-20 rounded-xl border border-white/10 bg-black/70 p-3 backdrop-blur-xl">
+              <div className="mb-2 flex items-center justify-between text-xs font-black uppercase tracking-widest text-white/65">
+                <span>Cloud save</span>
+                <span className="text-brand-neon">{uploadProgress}%</span>
+              </div>
+              <div className="h-2 overflow-hidden rounded-full bg-white/10">
+                <div className="h-full bg-brand-neon transition-all" style={{ width: `${uploadProgress}%` }} />
+              </div>
+            </div>
+          )}
         </div>
 
         {/* ================= STATS ================= */}
@@ -184,8 +175,8 @@ export default function LiveTraining(props: any) {
 
           <StatCard
             icon={<Clock />}
-            value="42:12"
-            label="Duration"
+            value={`${totalShots}`}
+            label="Total Shots"
           />
         </div>
       </div>
@@ -193,12 +184,14 @@ export default function LiveTraining(props: any) {
       {/* ================= RIGHT PANEL ================= */}
       <div className="space-y-6">
 
+        <VideoUploader user={user} onSaved={onSessionSaved} />
+
         <div className="glass-card p-6">
           <h3 className="font-bold mb-4">Live Analysis</h3>
 
           <AnalysisRow
             label="Shots"
-            value={`${madeShots}/${missedShots}`}
+            value={`${missedShots} MISS | ${madeShots} MADE | ${totalShots} SHOTS`}
             status="Live"
           />
 
