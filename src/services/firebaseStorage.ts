@@ -20,10 +20,10 @@ export async function uploadPrivateFile(
   userId: string,
   sessionId: string,
   file: Blob | File,
-  folder: "videos" | "thumbnails",
+  folder: "videos" | "thumbnails" | "reports" | "drills" | "exports",
   onProgress?: UploadProgressHandler,
 ) {
-  const extension = folder === "thumbnails" ? "jpg" : getVideoExtension(file);
+  const extension = folder === "thumbnails" ? "jpg" : folder === "reports" ? "json" : getVideoExtension(file);
   const fileRef = ref(storage, `users/${userId}/sessions/${sessionId}/${folder}/source.${extension}`);
   const task = uploadBytesResumable(fileRef, file, {
     contentType: file.type || (folder === "thumbnails" ? "image/jpeg" : "video/webm"),
@@ -49,7 +49,7 @@ export async function retryUploadPrivateFile(
   userId: string,
   sessionId: string,
   file: Blob | File,
-  folder: "videos" | "thumbnails",
+  folder: "videos" | "thumbnails" | "reports" | "drills" | "exports",
   onProgress?: UploadProgressHandler,
   retries = 2,
 ) {

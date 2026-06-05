@@ -16,6 +16,8 @@ service firebase.storage {
         && (
           request.resource.contentType.matches('video/.*')
           || request.resource.contentType.matches('image/.*')
+          || request.resource.contentType == 'application/json'
+          || request.resource.contentType == 'text/csv'
         );
       allow delete: if isOwner(userId);
     }

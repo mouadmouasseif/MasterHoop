@@ -18,6 +18,10 @@ import Dashboard from "@/src/pages/Dashboard";
 import CoachPage from "@/src/pages/CoachPage";
 import HistoryPage from "@/src/pages/HistoryPage";
 import ProfilePage from "@/src/pages/ProfilePage";
+import GameModesPage from "@/src/pages/GameModesPage";
+import FriendsPage from "@/src/pages/FriendsPage";
+import TeamsPage from "@/src/pages/TeamsPage";
+import LeaderboardPage from "@/src/pages/LeaderboardPage";
 
 import CompleteProfile from "@/src/components/auth/CompleteProfile";
 
@@ -118,10 +122,11 @@ export default function App() {
     setLiveMetrics(metrics);
   }, []);
 
-  const handleRecordingComplete = useCallback(async (blob: Blob) => {
+  const handleRecordingComplete = useCallback(async (blob: Blob, metricsOverride?: Partial<PoseMetrics> | null) => {
     if (!user || blob.size === 0) return;
 
     const duration = recordingStartedAt ? Math.max(1, Math.round((Date.now() - recordingStartedAt) / 1000)) : 0;
+    const metricsForSave = metricsOverride || liveMetrics;
     setUploadProgress(1);
 
     try {
@@ -129,8 +134,8 @@ export default function App() {
         userId: user.uid,
         videoBlob: blob,
         duration,
-        drillName: "Live Training",
-        metrics: liveMetrics,
+        drillName: (metricsForSave as Record<string, unknown> | null | undefined)?.trainingName as string || "Live Training",
+        metrics: metricsForSave,
         onProgress: setUploadProgress,
       });
       setHistoryRefreshKey((key) => key + 1);
@@ -149,12 +154,15 @@ export default function App() {
   // ================= AUTH GATE =================
   if (!user) {
     return (
-      <LandingPage
-        onStart={handleGoogleLogin}
-        onGoogleLogin={handleGoogleLogin}
-        isAuthLoading={authLoading}
-        authError={authError}
-      />
+      <div className="min-h-screen bg-brand-dark">
+        <LandingPage
+          onStart={handleGoogleLogin}
+          onGoogleLogin={handleGoogleLogin}
+          isAuthLoading={authLoading}
+          authError={authError}
+        />
+        <Footer />
+      </div>
     );
   }
 
@@ -180,8 +188,20 @@ export default function App() {
       case "drills":
         return <DrillsPage onStartDrill={() => setActiveTab("live")} />;
 
+      case "games":
+        return <GameModesPage user={user} profile={profile} />;
+
+      case "friends":
+        return <FriendsPage user={user} profile={profile} />;
+
+      case "teams":
+        return <TeamsPage user={user} profile={profile} />;
+
+      case "leaderboard":
+        return <LeaderboardPage />;
+
       case "stats":
-        return <Dashboard />;
+        return <Dashboard profile={profile} />;
 
       case "coach":
         return <CoachPage />;

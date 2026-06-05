@@ -11,6 +11,7 @@ import ScanButton from '@/src/components/ScanButton';
 import ScoreBoard from '@/src/components/ScoreBoard';
 import * as cocoSsd from '@tensorflow-models/coco-ssd';
 
+
 interface CameraRecorderProps {
   isRecording: boolean;
   onRecordingChange: (recording: boolean) => void;
@@ -1046,16 +1047,14 @@ export function CameraRecorder({
 
       {/* Header */}
       <div className="text-center">
-        <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-brand-orange/20 border border-brand-orange/20 mb-4">
-          ًں“±
-        </div>
+        
 
         <h3 className="text-sm font-black uppercase tracking-widest text-brand-orange">
-          Mode paysage recommandأ©
+          Mode paysage recommand
         </h3>
 
         <p className="mt-3 text-sm text-white/70 leading-relaxed">
-          Sur mobile/tablette, tourne ton tأ©lأ©phone horizontalement pour une meilleure dأ©tection des lignes
+          Sur mobile/tablette, tourne ton telephone horizontalement pour une meilleure detection des lignes
           <span className="text-brand-orange font-bold"> 2PT / 3PT</span>.
         </p>
       </div>
@@ -1692,7 +1691,7 @@ function CourtSetupGuide({ onComplete, courtType }: { onComplete: () => void, co
   onClick={onComplete}
   className="absolute top-4 right-4 z-50 w-10 h-10 flex items-center justify-center rounded-full bg-white/10 hover:bg-red-500/80 transition-all duration-300 border border-white/10 backdrop-blur-md"
 >
-  âœ•
+   <X />
 </button>
 
   <div className="text-center space-y-4">
@@ -1704,13 +1703,13 @@ function CourtSetupGuide({ onComplete, courtType }: { onComplete: () => void, co
     </div>
 
     <p className="text-sm sm:text-base text-white/80 leading-relaxed font-medium italic">
-      "Placez votre tأ©lأ©phone dans le{" "}
+      "Placez votre telephone dans le{" "}
       <span className="text-brand-blue font-black uppercase">
-        coin arriأ¨re
+        coin arriere
       </span>
       . L'angle doit couvrir{" "}
       <span className="underline decoration-brand-blue/40 underline-offset-4">
-        le panier et la ligne أ  3 points
+        le panier et la ligne 3 points
       </span>
       ."
     </p>

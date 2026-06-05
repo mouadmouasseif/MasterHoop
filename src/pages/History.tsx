@@ -1,12 +1,13 @@
 import { motion } from "motion/react";
 import { useEffect, useState } from "react";
 import type { User } from "firebase/auth";
-import { Video } from "lucide-react";
+import { Download, FileSpreadsheet, Printer, Share2, Video } from "lucide-react";
 
 import AIAnalyticsPanel from "@/src/components/AIAnalyticsPanel";
 import SessionHistory from "@/src/components/SessionHistory";
 import SessionPlayer from "@/src/components/SessionPlayer";
 import { analyzeBasketballSession } from "@/src/services/aiAnalysisService";
+import { exportExcelWorkbook, exportProfessionalPdf, exportSessionsCsv } from "@/src/services/exportService";
 import { listTrainingSessions, type TrainingSession } from "@/src/services/sessionService";
 
 export default function History({ user, refreshKey = 0 }: { user: User | null; refreshKey?: number }) {
@@ -44,6 +45,8 @@ export default function History({ user, refreshKey = 0 }: { user: User | null; r
         dribbleCount: Number(selected.metrics?.dribbleCount || 0),
       } as any)
     : null;
+  const sharedVideos = readSharedVideos();
+  const recommendations = selected?.recommendations || selectedAnalysis?.suggestions || [];
 
   return (
     <motion.div
@@ -53,10 +56,17 @@ export default function History({ user, refreshKey = 0 }: { user: User | null; r
       exit={{ opacity: 0, y: -16 }}
       className="space-y-6"
     >
-      <div>
-        <div className="mb-2 text-xs font-black uppercase tracking-[0.24em] text-brand-orange">History</div>
-        <h2 className="text-3xl font-black uppercase">Session Replay</h2>
-        <p className="mt-2 text-sm text-white/50">Private cloud videos, AI feedback, score comparison, and improvement review.</p>
+      <div className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
+        <div>
+          <div className="mb-2 text-xs font-black uppercase tracking-[0.24em] text-brand-orange">History</div>
+          <h2 className="text-3xl font-black uppercase">Session Replay</h2>
+          <p className="mt-2 text-sm text-white/50">Mes videos, matchs, statistiques, analyses IA et sessions partagees par une equipe.</p>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <button onClick={() => exportProfessionalPdf({ sessions, recommendations })} className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-xs font-black"><Printer size={15} /> PDF</button>
+          <button onClick={() => exportExcelWorkbook({ sessions, recommendations })} className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-xs font-black"><FileSpreadsheet size={15} /> Excel</button>
+          <button onClick={() => exportSessionsCsv({ sessions, recommendations })} className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-xs font-black"><Download size={15} /> CSV</button>
+        </div>
       </div>
 
       {selected && (
@@ -76,6 +86,28 @@ export default function History({ user, refreshKey = 0 }: { user: User | null; r
           No saved sessions yet. Record live or upload a training video to build your history.
         </div>
       )}
+
+      <div className="glass-card p-6">
+        <div className="mb-4 flex items-center gap-2 text-xl font-black uppercase"><Share2 className="text-brand-orange" /> Videos synchronisees</div>
+        <div className="grid gap-3 md:grid-cols-3">
+          {sharedVideos.map((item: any) => (
+            <div key={item.createdAt || item.videoUrl} className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
+              <div className="font-black">Video Session</div>
+              <div className="mt-1 text-xs text-white/40">{(item.participantUids || []).length} participant(s)</div>
+              <div className="mt-3 text-xs text-brand-neon">Video, analyse IA, rapport et statistiques disponibles pour chaque membre.</div>
+            </div>
+          ))}
+          {sharedVideos.length === 0 && <div className="text-sm text-white/45">Aucune video partagee pour le moment.</div>}
+        </div>
+      </div>
     </motion.div>
   );
+}
+
+function readSharedVideos() {
+  try {
+    return JSON.parse(localStorage.getItem("masterHoopSyncedVideos") || "[]");
+  } catch {
+    return [];
+  }
 }

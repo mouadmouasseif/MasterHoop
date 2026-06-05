@@ -2,11 +2,18 @@ import {
   BookOpen,
   Brain,
   Camera,
+  ChevronDown,
   History,
   LayoutDashboard,
+  Shield,
   Settings,
+  Swords,
+  Trophy,
   UserRound,
+  UsersRound,
 } from "lucide-react";
+import React from "react";
+import { useState } from "react";
 
 import { cn } from "@/src/lib/utils";
 import masterHoopLogo from "@/src/assets/master-hoop-logo.png";
@@ -24,6 +31,10 @@ export default function Sidebar({
   isImmersive: boolean;
   setIsImmersive?: (value: boolean) => void;
 }) {
+  const [gamesOpen, setGamesOpen] = useState(false);
+  const gameTabs: ActiveTab[] = ["games", "friends", "teams", "leaderboard"];
+  const isGamesGroupActive = gameTabs.includes(activeTab);
+
   const navigate = (tab: ActiveTab) => {
     setActiveTab(tab);
 
@@ -71,6 +82,25 @@ export default function Sidebar({
         />
 
         <NavButton
+          active={isGamesGroupActive}
+          onClick={() => {
+            setGamesOpen((open) => !open);
+            navigate("games");
+          }}
+          icon={<Swords />}
+          label="Games"
+        />
+
+        {(gamesOpen || isGamesGroupActive) && (
+          <div className="flex flex-row gap-2 rounded-2xl border border-white/5 bg-black/20 p-1 md:-mt-3 md:flex-col md:gap-1">
+            <SubNavButton active={activeTab === "friends"} onClick={() => navigate("friends")} icon={<UsersRound />} label="Friends" />
+            <SubNavButton active={activeTab === "teams"} onClick={() => navigate("teams")} icon={<Shield />} label="Teams" />
+            <SubNavButton active={activeTab === "leaderboard"} onClick={() => navigate("leaderboard")} icon={<Trophy />} label="Rank" />
+            <ChevronDown className="hidden self-center text-white/20 md:block" size={12} />
+          </div>
+        )}
+
+        <NavButton
           active={activeTab === "stats"}
           onClick={() => navigate("stats")}
           icon={<LayoutDashboard />}
@@ -109,5 +139,21 @@ export default function Sidebar({
         />
       </div>
     </nav>
+  );
+}
+
+function SubNavButton({ active, icon, label, onClick }: { active: boolean; icon: React.ReactNode; label: string; onClick: () => void }) {
+  return (
+    <button
+      onClick={onClick}
+      className={cn(
+        "flex items-center justify-center rounded-xl p-2 transition md:flex-col md:gap-1",
+        active ? "bg-brand-orange/15 text-brand-orange" : "text-white/35 hover:bg-white/5 hover:text-white",
+      )}
+      title={label}
+    >
+      <span>{React.cloneElement(icon as React.ReactElement, { size: 17 } as any)}</span>
+      <span className="hidden text-[9px] font-black uppercase tracking-wider md:block">{label}</span>
+    </button>
   );
 }

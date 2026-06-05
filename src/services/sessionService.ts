@@ -14,6 +14,8 @@ import {
 import { db } from "@/src/lib/firebase";
 import type { PoseMetrics } from "@/src/lib/poseDetection";
 import { analyzeBasketballSession, type AIAnalysisResult } from "@/src/services/aiAnalysisService";
+import { buildAdvancedVideoAnalysis, type AdvancedVideoAnalysis } from "@/src/services/aiVisionEngine";
+import { recommendDrills, type TrainingDrill } from "@/src/services/drillRecommendationService";
 import {
   generateVideoThumbnail,
   retryUploadPrivateFile,
@@ -33,6 +35,12 @@ export type TrainingSession = {
   strengths: string[];
   weaknesses: string[];
   suggestions: string[];
+  recommendations: string[];
+  recommendedDrills: TrainingDrill[];
+  playerName?: string;
+  notes?: string;
+  reportUrl?: string;
+  advancedAnalysis?: AdvancedVideoAnalysis;
   metrics: AIAnalysisResult["metrics"] & Record<string, unknown>;
 };
 
@@ -42,6 +50,8 @@ export type SaveSessionInput = {
   duration: number;
   drillName?: string;
   metrics?: Partial<PoseMetrics> | null;
+  playerName?: string;
+  notes?: string;
   onProgress?: UploadProgressHandler;
 };
 
@@ -53,6 +63,8 @@ export async function saveTrainingSession({
   duration,
   drillName = "Freestyle",
   metrics,
+  playerName = "John",
+  notes = "",
   onProgress,
 }: SaveSessionInput) {
   const sessionRef = collection(db, "users", userId, "sessions");
@@ -66,6 +78,12 @@ export async function saveTrainingSession({
     strengths: [],
     weaknesses: [],
     suggestions: [],
+    recommendations: [],
+    recommendedDrills: [],
+    playerName,
+    notes,
+    reportUrl: "",
+    advancedAnalysis: {},
     metrics: {},
     videoUrl: "",
     thumbnailUrl: "",
@@ -73,13 +91,29 @@ export async function saveTrainingSession({
   });
 
   const analysis = analyzeBasketballSession(metrics);
+  const advancedAnalysis = buildAdvancedVideoAnalysis(metrics, playerName);
+  const recommendedDrills = recommendDrills(advancedAnalysis.report.weaknesses);
+  const missionReport = (metrics as Record<string, unknown> | null | undefined)?.trainingMissionReport || null;
+  const missionProgress = (metrics as Record<string, unknown> | null | undefined)?.trainingMissionProgress || null;
+  const missionBadges = (metrics as Record<string, unknown> | null | undefined)?.trainingBadges || [];
   const videoUrl = await retryUploadPrivateFile(userId, draft.id, videoBlob, "videos", onProgress);
   const thumbnailBlob = await generateVideoThumbnail(videoBlob);
   const thumbnailUrl = thumbnailBlob
     ? await retryUploadPrivateFile(userId, draft.id, thumbnailBlob, "thumbnails")
     : "";
+  const reportBlob = new Blob([JSON.stringify({
+    sessionId: draft.id,
+    analysis,
+    advancedAnalysis,
+    missionReport,
+    missionProgress,
+    missionBadges,
+    recommendations: advancedAnalysis.report.recommendations,
+    recommendedDrills,
+  }, null, 2)], { type: "application/json" });
+  const reportUrl = await retryUploadPrivateFile(userId, draft.id, reportBlob, "reports");
 
-  await updateDoc(doc(db, "users", userId, "sessions", draft.id), {
+  const sessionPayload = {
     videoUrl,
     thumbnailUrl,
     duration,
@@ -89,16 +123,39 @@ export async function saveTrainingSession({
     strengths: analysis.strengths,
     weaknesses: analysis.weaknesses,
     suggestions: analysis.suggestions,
+    recommendations: advancedAnalysis.report.recommendations,
+    recommendedDrills,
+    playerName,
+    notes,
+    reportUrl,
+    advancedAnalysis,
+    missionReport,
+    missionProgress,
+    missionBadges,
     metrics: {
       ...analysis.metrics,
       madeShots: metrics?.madeShots ?? 0,
       missedShots: metrics?.missedShots ?? 0,
       dribbleCount: metrics?.dribbleCount ?? 0,
+      trainingMissionReport: missionReport,
+      trainingMissionProgress: missionProgress,
+      trainingBadges: missionBadges,
     },
     uploadStatus: "complete",
+  };
+
+  await updateDoc(doc(db, "users", userId, "sessions", draft.id), sessionPayload);
+
+  await Promise.all([
+    addDoc(collection(db, "trainings"), { userId, sessionId: draft.id, createdAt: serverTimestamp(), ...sessionPayload }),
+    addDoc(collection(db, "analyses"), { userId, sessionId: draft.id, createdAt: serverTimestamp(), analysis, advancedAnalysis }),
+    addDoc(collection(db, "videos"), { userId, sessionId: draft.id, createdAt: serverTimestamp(), videoUrl, thumbnailUrl }),
+    addDoc(collection(db, "reports"), { userId, sessionId: draft.id, createdAt: serverTimestamp(), reportUrl, report: advancedAnalysis.report }),
+  ]).catch((error) => {
+    console.warn("Secondary analytics collections write failed:", error);
   });
 
-  return { id: draft.id, videoUrl, thumbnailUrl, ...analysis };
+  return { id: draft.id, videoUrl, thumbnailUrl, reportUrl, advancedAnalysis, recommendedDrills, ...analysis };
 }
 
 export async function listTrainingSessions(userId: string): Promise<TrainingSession[]> {
@@ -119,6 +176,12 @@ export async function listTrainingSessions(userId: string): Promise<TrainingSess
       strengths: data.strengths || [],
       weaknesses: data.weaknesses || [],
       suggestions: data.suggestions || [],
+      recommendations: data.recommendations || data.suggestions || [],
+      recommendedDrills: data.recommendedDrills || [],
+      playerName: data.playerName || "John",
+      notes: data.notes || "",
+      reportUrl: data.reportUrl || "",
+      advancedAnalysis: data.advancedAnalysis,
       metrics: data.metrics || {},
     };
   });
