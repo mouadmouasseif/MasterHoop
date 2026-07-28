@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from "react";
+import { lazy, Suspense, useEffect, useState, useCallback } from "react";
 import { AnimatePresence } from "motion/react";
 import { onAuthStateChanged, type User as FirebaseUser } from "firebase/auth";
 import { doc, getDoc } from "firebase/firestore";
@@ -11,17 +11,18 @@ import Footer from "@/src/components/layout/Footer";
 import InstallPrompt from "@/src/components/InstallPrompt";
 import SplashScreen from "@/src/components/SplashScreen";
 
-import LandingPage from "@/src/pages/LandingPage";
-import LiveTraining from "@/src/pages/LiveTraining";
-import DrillsPage from "@/src/pages/DrillsPage";
-import Dashboard from "@/src/pages/Dashboard";
-import CoachPage from "@/src/pages/CoachPage";
-import HistoryPage from "@/src/pages/HistoryPage";
-import ProfilePage from "@/src/pages/ProfilePage";
-import GameModesPage from "@/src/pages/GameModesPage";
-import FriendsPage from "@/src/pages/FriendsPage";
-import TeamsPage from "@/src/pages/TeamsPage";
-import LeaderboardPage from "@/src/pages/LeaderboardPage";
+const LandingPage = lazy(() => import("@/src/pages/LandingPage"));
+const LiveTraining = lazy(() => import("@/src/pages/LiveTraining"));
+const DrillsPage = lazy(() => import("@/src/pages/DrillsPage"));
+const Dashboard = lazy(() => import("@/src/pages/Dashboard"));
+const CoachPage = lazy(() => import("@/src/pages/CoachPage"));
+const HistoryPage = lazy(() => import("@/src/pages/HistoryPage"));
+const ProfilePage = lazy(() => import("@/src/pages/ProfilePage"));
+const GameModesPage = lazy(() => import("@/src/pages/GameModesPage"));
+const FriendsPage = lazy(() => import("@/src/pages/FriendsPage"));
+const TeamsPage = lazy(() => import("@/src/pages/TeamsPage"));
+const LeaderboardPage = lazy(() => import("@/src/pages/LeaderboardPage"));
+const NotificationsPage = lazy(() => import("@/src/pages/NotificationsPage"));
 
 import CompleteProfile from "@/src/components/auth/CompleteProfile";
 
@@ -155,12 +156,14 @@ export default function App() {
   if (!user) {
     return (
       <div className="min-h-screen bg-brand-dark">
-        <LandingPage
-          onStart={handleGoogleLogin}
-          onGoogleLogin={handleGoogleLogin}
-          isAuthLoading={authLoading}
-          authError={authError}
-        />
+        <Suspense fallback={<SplashScreen />}>
+          <LandingPage
+            onStart={handleGoogleLogin}
+            onGoogleLogin={handleGoogleLogin}
+            isAuthLoading={authLoading}
+            authError={authError}
+          />
+        </Suspense>
         <Footer />
       </div>
     );
@@ -200,11 +203,20 @@ export default function App() {
       case "leaderboard":
         return <LeaderboardPage />;
 
+      case "notifications":
+        return (
+          <NotificationsPage
+            user={user}
+            onOpenHistory={() => setActiveTab("history")}
+            onOpenGames={() => setActiveTab("games")}
+          />
+        );
+
       case "stats":
         return <Dashboard profile={profile} />;
 
       case "coach":
-        return <CoachPage />;
+        return <CoachPage user={user} />;
 
       case "history":
         return <HistoryPage user={user} refreshKey={historyRefreshKey} />;
@@ -223,6 +235,7 @@ export default function App() {
         return <LiveTraining />;
     }
   };
+  const hasMobileSubnav = ["games", "friends", "teams", "leaderboard", "notifications"].includes(activeTab);
 
   // ================= UI =================
   return (
@@ -236,7 +249,7 @@ export default function App() {
       />
       
       {/* MAIN CONTENT */}
-      <main className="flex-1 overflow-y-auto p-4 md:p-8">
+      <main className={`min-w-0 flex-1 overflow-y-auto overflow-x-hidden p-4 md:p-8 ${hasMobileSubnav ? "pt-32" : "pt-24"} md:pt-8`}>
  
         {/* NAVBAR */}
         <Navbar
@@ -252,9 +265,11 @@ export default function App() {
         />
 
         {/* ROUTER */}
-        <AnimatePresence mode="wait">
-          {renderPage()}
-        </AnimatePresence>
+        <Suspense fallback={<PageFallback />}>
+          <AnimatePresence mode="wait">
+            {renderPage()}
+          </AnimatePresence>
+        </Suspense>
 
         {!isImmersive && <Footer />}
       </main>
@@ -287,6 +302,17 @@ export default function App() {
 
       <InstallPrompt />
 
+    </div>
+  );
+}
+
+function PageFallback() {
+  return (
+    <div className="glass-card flex min-h-[420px] items-center justify-center p-10 text-center text-white/45">
+      <div>
+        <div className="mx-auto mb-4 h-10 w-10 animate-spin rounded-full border-2 border-white/10 border-t-brand-orange" />
+        Chargement MasterHoop...
+      </div>
     </div>
   );
 }

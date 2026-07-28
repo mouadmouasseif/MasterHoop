@@ -25,7 +25,6 @@ import {
 } from "lucide-react";
 
 import { cn } from "@/src/lib/utils";
-import { getBasketballNews } from "@/src/services/geminiService";
 import { CameraRecorder } from "@/src/components/CameraRecorder";
 import VideoUploader from "@/src/components/VideoUploader";
 import AnalysisRow from "@/src/components/ui/AnalysisRow";
@@ -189,13 +188,13 @@ export default function LiveTraining(props: any) {
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -20 }}
       className={cn(
-        "grid grid-cols-1 lg:grid-cols-3 gap-6 h-full",
+        "grid h-full max-w-full grid-cols-1 gap-4 overflow-hidden sm:gap-6 lg:grid-cols-3",
         isImmersive && "lg:grid-cols-1 gap-0"
       )}
     >
       {/* ================= CAMERA ================= */}
-      <div className="lg:col-span-2 space-y-6 h-full">
-        <div className="relative aspect-video glass-card overflow-hidden">
+      <div className="min-w-0 space-y-6 h-full lg:col-span-2">
+        <div className="relative aspect-video max-w-full glass-card overflow-hidden">
 
           <CameraRecorder
             isRecording={isRecording}
@@ -242,7 +241,7 @@ export default function LiveTraining(props: any) {
         </div>
 
         {/* ================= STATS ================= */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-4 md:gap-4">
           <StatCard
             icon={<Activity />}
             value={`${safeMetrics.elbowAngle || 72}%`}
@@ -271,7 +270,7 @@ export default function LiveTraining(props: any) {
       </div>
 
       {/* ================= RIGHT PANEL ================= */}
-      <div className="space-y-6">
+      <div className="min-w-0 space-y-6">
 
         <div className="glass-card p-6">
           <div className="mb-4 flex items-start justify-between gap-3">

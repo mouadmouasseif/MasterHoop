@@ -17,7 +17,14 @@
   body {
     @apply bg-brand-dark text-white font-sans antialiased;
     overscroll-behavior: none;
+    overflow-x: hidden;
     -webkit-tap-highlight-color: transparent;
+  }
+
+  #root {
+    min-height: 100vh;
+    max-width: 100%;
+    overflow-x: hidden;
   }
 }
 

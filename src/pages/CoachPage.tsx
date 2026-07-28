@@ -1,4 +1,6 @@
 import { motion } from "motion/react";
+import { useEffect, useState } from "react";
+import type { User as FirebaseUser } from "firebase/auth";
 import {
   Brain,
   ChevronRight,
@@ -8,14 +10,46 @@ import {
 } from "lucide-react";
 import VideoUploadAnalyzer from "@/src/components/analysis/VideoUploadAnalyzer";
 import { getLocalAnalyses } from "@/src/services/localAnalysisService";
+import { listTrainingSessions } from "@/src/services/sessionService";
+import { generateAssistantReport } from "@/src/services/aiAssistantService";
+import { buildUserLearningProfile } from "@/src/services/userLearningProfileService";
+import type { AssistantReport } from "@/src/types/aiAssistant";
 
 export default function CoachPage(props: any) {
-  const { loadingTips, coachTips, fetchTips } = props;
+  const { loadingTips, coachTips, fetchTips, user } = props as {
+    loadingTips?: boolean;
+    coachTips?: string[];
+    fetchTips?: () => void;
+    user?: FirebaseUser | null;
+  };
 
   const safeCoachTips: string[] = coachTips ?? [];
+  const [assistantReport, setAssistantReport] = useState<AssistantReport | null>(null);
+  const [assistantLoading, setAssistantLoading] = useState(false);
 
   const analyses = getLocalAnalyses() ?? [];
   const last = analyses.length > 0 ? analyses[0] : null;
+
+  useEffect(() => {
+    let cancelled = false;
+    async function loadAssistant() {
+      if (!user) return;
+      setAssistantLoading(true);
+      try {
+        const sessions = await listTrainingSessions(user.uid);
+        const profile = buildUserLearningProfile(user.uid, sessions);
+        if (!cancelled) setAssistantReport(generateAssistantReport(profile, sessions));
+      } catch (error) {
+        console.warn("Assistant profile load failed:", error);
+      } finally {
+        if (!cancelled) setAssistantLoading(false);
+      }
+    }
+    loadAssistant();
+    return () => {
+      cancelled = true;
+    };
+  }, [user]);
 
   return (
     <motion.div
@@ -77,7 +111,7 @@ export default function CoachPage(props: any) {
                 ))}
 
                 <button
-                  onClick={fetchTips}
+                  onClick={fetchTips || (() => undefined)}
                   className="mt-4 flex items-center gap-2 text-sm font-bold text-brand-neon transition hover:gap-3"
                 >
                   Recalculer les conseils <ChevronRight size={16} />
@@ -97,9 +131,33 @@ export default function CoachPage(props: any) {
             </div>
 
             <p className="text-sm text-white/70">
-              {last?.recommendations?.[0] ??
+              {assistantReport?.recommendations?.[0]?.title ??
+                last?.recommendations?.[0] ??
                 "Upload une video ou lance un drill pour recevoir une recommandation personnalisee."}
             </p>
+          </div>
+
+          <div className="glass-card p-6">
+            <div className="mb-3 text-sm font-black uppercase text-brand-neon">Profil IA apprenant</div>
+            {assistantLoading ? (
+              <div className="space-y-3">
+                <div className="h-4 animate-pulse rounded bg-white/10" />
+                <div className="h-4 w-3/4 animate-pulse rounded bg-white/10" />
+              </div>
+            ) : assistantReport ? (
+              <div className="space-y-3 text-sm text-white/65">
+                <p>{assistantReport.summary}</p>
+                <div className="rounded-xl border border-white/10 bg-black/20 p-3">
+                  <div className="text-xs font-black uppercase text-white/35">Prochain objectif</div>
+                  <div className="mt-1 font-bold text-white">{assistantReport.goals[0]?.title || "Continuer a collecter des donnees fiables"}</div>
+                </div>
+                <div className="text-xs text-white/35">
+                  Donnees source: {assistantReport.evidence.sessionsAnalyzed} session(s), {assistantReport.evidence.shotsAttempted} tir(s).
+                </div>
+              </div>
+            ) : (
+              <p className="text-sm text-white/45">Aucune session Firebase exploitable pour le moment.</p>
+            )}
           </div>
         </div>
       </div>

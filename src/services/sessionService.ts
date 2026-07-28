@@ -31,6 +31,9 @@ export type TrainingSession = {
   duration: number;
   drillName: string;
   score: number;
+  confidenceScore: number;
+  confidenceLabel: AIAnalysisResult["confidenceLabel"];
+  analysisEngine: AIAnalysisResult["engine"];
   aiFeedback: string;
   strengths: string[];
   weaknesses: string[];
@@ -119,6 +122,9 @@ export async function saveTrainingSession({
     duration,
     drillName,
     score: analysis.score,
+    confidenceScore: analysis.confidenceScore,
+    confidenceLabel: analysis.confidenceLabel,
+    analysisEngine: analysis.engine,
     aiFeedback: analysis.aiFeedback,
     strengths: analysis.strengths,
     weaknesses: analysis.weaknesses,
@@ -134,9 +140,13 @@ export async function saveTrainingSession({
     missionBadges,
     metrics: {
       ...analysis.metrics,
+      metricConfidence: analysis.metricConfidence,
+      analysisLimitations: analysis.limitations,
       madeShots: metrics?.madeShots ?? 0,
       missedShots: metrics?.missedShots ?? 0,
       dribbleCount: metrics?.dribbleCount ?? 0,
+      ballConfidence: metrics?.ballConfidence ?? 0,
+      ballDetectorSource: metrics?.ballDetectorSource ?? "coco-ssd",
       trainingMissionReport: missionReport,
       trainingMissionProgress: missionProgress,
       trainingBadges: missionBadges,
@@ -172,6 +182,9 @@ export async function listTrainingSessions(userId: string): Promise<TrainingSess
       duration: Number(data.duration || 0),
       drillName: data.drillName || "Freestyle",
       score: Number(data.score || 0),
+      confidenceScore: Number(data.confidenceScore || 0),
+      confidenceLabel: data.confidenceLabel || "unreliable",
+      analysisEngine: data.analysisEngine || "masterhoop-local-v1",
       aiFeedback: data.aiFeedback || "",
       strengths: data.strengths || [],
       weaknesses: data.weaknesses || [],

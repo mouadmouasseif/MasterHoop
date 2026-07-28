@@ -2,6 +2,7 @@ import {
   BookOpen,
   Brain,
   Camera,
+  Bell,
   ChevronDown,
   History,
   LayoutDashboard,
@@ -32,8 +33,9 @@ export default function Sidebar({
   setIsImmersive?: (value: boolean) => void;
 }) {
   const [gamesOpen, setGamesOpen] = useState(false);
-  const gameTabs: ActiveTab[] = ["games", "friends", "teams", "leaderboard"];
+  const gameTabs: ActiveTab[] = ["games", "friends", "teams", "leaderboard", "notifications"];
   const isGamesGroupActive = gameTabs.includes(activeTab);
+  const showGamesSubmenu = gamesOpen || isGamesGroupActive;
 
   const navigate = (tab: ActiveTab) => {
     setActiveTab(tab);
@@ -47,7 +49,8 @@ export default function Sidebar({
   return (
     <nav
       className={cn(
-        "w-full md:w-20 bg-brand-surface/80 backdrop-blur-xl border-b md:border-r border-white/5 flex flex-row md:flex-col items-center py-3 md:py-8 sticky top-0 z-50 transition-all duration-500",
+        "fixed left-0 right-0 top-0 z-50 w-full bg-brand-surface/90 px-3 py-2 backdrop-blur-xl transition-all duration-500 md:sticky md:right-auto md:h-screen md:w-20 md:border-r md:border-b-0 md:border-white/5 md:px-0 md:py-8",
+        "border-b border-white/5 flex flex-col items-stretch md:items-center",
 
         // UX IMMERSIVE MODE (soft fade, pas de blocage)
         isImmersive &&
@@ -65,7 +68,7 @@ export default function Sidebar({
       </div>
 
       {/* NAV ITEMS */}
-      <div className="flex flex-row md:flex-col gap-5 px-3 md:px-0 w-full justify-around md:justify-start">
+      <div className="flex w-full flex-row justify-start gap-2 overflow-x-auto overscroll-x-contain px-1 pb-1 md:flex-col md:justify-start md:gap-5 md:overflow-visible md:px-0 md:pb-0">
         
         <NavButton
           active={activeTab === "live"}
@@ -90,15 +93,6 @@ export default function Sidebar({
           icon={<Swords />}
           label="Games"
         />
-
-        {(gamesOpen || isGamesGroupActive) && (
-          <div className="flex flex-row gap-2 rounded-2xl border border-white/5 bg-black/20 p-1 md:-mt-3 md:flex-col md:gap-1">
-            <SubNavButton active={activeTab === "friends"} onClick={() => navigate("friends")} icon={<UsersRound />} label="Friends" />
-            <SubNavButton active={activeTab === "teams"} onClick={() => navigate("teams")} icon={<Shield />} label="Teams" />
-            <SubNavButton active={activeTab === "leaderboard"} onClick={() => navigate("leaderboard")} icon={<Trophy />} label="Rank" />
-            <ChevronDown className="hidden self-center text-white/20 md:block" size={12} />
-          </div>
-        )}
 
         <NavButton
           active={activeTab === "stats"}
@@ -128,6 +122,19 @@ export default function Sidebar({
           label="Profil"
         />
       </div>
+
+      {showGamesSubmenu && (
+        <div className="mt-2 flex w-full justify-end md:mt-0 md:justify-center">
+          <div className="flex max-w-full flex-row gap-1 overflow-x-auto rounded-xl border border-white/5 bg-black/35 p-1 shadow-lg shadow-black/20 md:-mt-3 md:flex-col md:gap-1 md:overflow-visible md:rounded-2xl">
+            <SubNavButton active={activeTab === "games"} onClick={() => navigate("games")} icon={<Swords />} label="Match" />
+            <SubNavButton active={activeTab === "friends"} onClick={() => navigate("friends")} icon={<UsersRound />} label="Amis" />
+            <SubNavButton active={activeTab === "teams"} onClick={() => navigate("teams")} icon={<Shield />} label="Equipe" />
+            <SubNavButton active={activeTab === "leaderboard"} onClick={() => navigate("leaderboard")} icon={<Trophy />} label="Rank" />
+            <SubNavButton active={activeTab === "notifications"} onClick={() => navigate("notifications")} icon={<Bell />} label="Alertes" />
+            <ChevronDown className="hidden self-center text-white/20 md:block" size={12} />
+          </div>
+        </div>
+      )}
 
       {/* SETTINGS */}
       <div className="mt-auto hidden md:flex pb-4">

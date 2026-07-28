@@ -7,12 +7,29 @@ export type LocalAnalysis = {
   videoUrl?: string;
   createdAt: string;
   score: number;
+  confidenceScore?: number;
+  qualityScore?: number;
   madeShots: number;
   missedShots: number;
   strengths: string[];
   weaknesses: string[];
   recommendations: string[];
   notes?: string;
+};
+
+export type MeasuredLocalAnalysisInput = {
+  fileName: string;
+  videoUrl: string;
+  source: LocalAnalysis["source"];
+  drill?: string;
+  score: number;
+  confidenceScore: number;
+  qualityScore?: number;
+  madeShots?: number;
+  missedShots?: number;
+  strengths: string[];
+  weaknesses: string[];
+  recommendations: string[];
 };
 
 const STORAGE_KEY = 'masterHoopAnalyses';
@@ -32,43 +49,23 @@ export function saveLocalAnalysis(analysis: LocalAnalysis) {
   return analyses;
 }
 
-export function createVideoAnalysis(
-  fileName: string,
-  source: LocalAnalysis['source'],
-  drill?: string,
-  videoUrl?: string,
-): LocalAnalysis {
-  const seed = Array.from(fileName + (drill || '')).reduce((acc, char) => acc + char.charCodeAt(0), 0);
-  const score = 68 + (seed % 24);
-  const madeShots = 8 + (seed % 12);
-  const missedShots = 3 + (seed % 7);
-
+export function createMeasuredVideoAnalysis(input: MeasuredLocalAnalysisInput): LocalAnalysis {
   return {
-    id: `analysis-${Date.now()}-${seed}`,
-    title: drill ? `${drill} Analysis` : 'Uploaded Training Analysis',
-    source,
-    drill,
-    videoName: fileName,
-    videoUrl,
+    id: `analysis-${Date.now()}-${crypto.randomUUID()}`,
+    title: input.drill ? `${input.drill} — Analyse` : "Analyse vidéo importée",
+    source: input.source,
+    drill: input.drill,
+    videoName: input.fileName,
+    videoUrl: input.videoUrl,
     createdAt: new Date().toISOString(),
-    score,
-    madeShots,
-    missedShots,
-    strengths: [
-      'Bonne stabilite du haut du corps',
-      'Coude proche de l axe de tir',
-      'Bon controle du ballon sur les changements de main',
-    ],
-    weaknesses: [
-      'Release parfois trop lent',
-      'Genoux pas assez charges avant le tir',
-      'Equilibre a renforcer apres le crossover',
-    ],
-    recommendations: [
-      'Travailler 3 series de 20 tirs avec pause au release',
-      'Ajouter des squats explosifs avant les drills',
-      'Filmer de profil pour verifier alignement epaule-coude-poignet',
-    ],
+    score: input.score,
+    confidenceScore: input.confidenceScore,
+    qualityScore: input.qualityScore,
+    madeShots: input.madeShots || 0,
+    missedShots: input.missedShots || 0,
+    strengths: input.strengths,
+    weaknesses: input.weaknesses,
+    recommendations: input.recommendations,
   };
 }
 

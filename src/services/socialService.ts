@@ -3,6 +3,7 @@ import {
   arrayRemove,
   arrayUnion,
   collection,
+  deleteDoc,
   doc,
   getDocs,
   limit,
@@ -23,6 +24,7 @@ import type {
   MatchType,
   NotificationItem,
   PlayerStats,
+  SharedVideoSession,
   SocialPlayer,
   SyncedMatchResult,
   TeamProfile,
@@ -61,6 +63,7 @@ export function profileToSocialPlayer(
   const uniquePlayerId = profile?.uniquePlayerId || createPlayerId(fallback.uid);
   const fullName = profile?.fullName || profile?.name || fallback.displayName || "MasterHoop Player";
   const username = profile?.username || fullName.toLowerCase().replace(/[^a-z0-9]+/g, ".").replace(/\.$/, "") || uniquePlayerId.toLowerCase();
+  const storedStats = (profile as UserProfile & { stats?: Partial<PlayerStats> } | null)?.stats || {};
   return {
     uid: profile?.uid || profile?.userId || fallback.uid,
     username,
@@ -74,7 +77,7 @@ export function profileToSocialPlayer(
     teams: profile?.teams || [],
     level: "Pro Prospect",
     lastActive: "Online today",
-    stats: emptyStats,
+    stats: { ...emptyStats, ...storedStats },
   };
 }
 
@@ -108,7 +111,7 @@ export function subscribeFriends(userId: string, onChange: (friends: SocialPlaye
 }
 
 export function subscribeFriendRequests(userId: string, onChange: (requests: FriendRequest[]) => void): Unsubscribe {
-  return onSnapshot(query(collection(db, "friend_requests"), where("toUid", "==", userId), where("status", "==", "pending")), (snapshot) => {
+  return onSnapshot(query(collection(db, "friend_requests"), where("toUid", "==", userId), where("status", "in", ["pending", "friend_request_pending"])), (snapshot) => {
     onChange(snapshot.docs.map((snap) => ({ id: snap.id, ...snap.data() }) as FriendRequest));
   });
 }
@@ -133,7 +136,19 @@ export function subscribeMatches(userId: string, onChange: (matches: AIMatchReco
 
 export function subscribeNotifications(userId: string, onChange: (notifications: NotificationItem[]) => void): Unsubscribe {
   return onSnapshot(query(collection(db, "notifications"), where("userId", "==", userId)), (snapshot) => {
-    onChange(snapshot.docs.map((snap) => ({ id: snap.id, ...snap.data() }) as NotificationItem));
+    const notifications = snapshot.docs
+      .map((snap) => ({ id: snap.id, ...snap.data() }) as NotificationItem)
+      .sort((a, b) => Number(b.createdAt?.seconds || 0) - Number(a.createdAt?.seconds || 0));
+    onChange(notifications);
+  });
+}
+
+export function subscribeSharedVideos(userId: string, onChange: (videos: SharedVideoSession[]) => void): Unsubscribe {
+  return onSnapshot(query(collection(db, "videos"), where("participantUids", "array-contains", userId)), (snapshot) => {
+    const videos = snapshot.docs
+      .map((snap) => ({ id: snap.id, ...snap.data() }) as SharedVideoSession)
+      .sort((a, b) => Number(b.createdAt?.seconds || 0) - Number(a.createdAt?.seconds || 0));
+    onChange(videos);
   });
 }
 
@@ -145,7 +160,7 @@ export async function sendFriendRequest(from: SocialPlayer, to: SocialPlayer) {
     fromPlayerId: from.uniquePlayerId,
     toPlayerId: to.uniquePlayerId,
     fromPlayer: from,
-    status: "pending",
+    status: "friend_request_pending",
     createdAt: serverTimestamp(),
   };
   await addDoc(collection(db, "friend_requests"), payload);
@@ -171,7 +186,7 @@ export async function acceptFriendRequest(request: FriendRequest, me: SocialPlay
       participantUids: [me.uid, fromPlayer.uid],
       createdAt: serverTimestamp(),
     }),
-    updateDoc(doc(db, "friend_requests", request.id), { status: "accepted" }),
+    updateDoc(doc(db, "friend_requests", request.id), { status: "friend_request_accepted" }),
   ]);
 }
 
@@ -236,7 +251,7 @@ export async function createMatchInvitation(input: {
     participantUids,
     roster: [...teamA, ...teamB],
     createdAt: serverTimestamp(),
-    status: "waiting",
+    status: "match_invite_pending",
     score: { A: 0, B: 0 },
     stats: Object.fromEntries(participantUids.map((uid) => [uid, createEmptyMatchStats()])),
     timeline: [],
@@ -280,6 +295,14 @@ export async function finishMatch(input: {
     aiAnalysis: input.aiAnalysis || {},
   });
 
+  await syncVideoSession({
+    ownerUid: input.ownerUid,
+    participantUids: input.participantUids,
+    videoUrl: input.videoUrl || "",
+    matchId: input.matchId,
+    reportId: input.matchId,
+  });
+
   await Promise.all(input.participantUids.map((uid) =>
     createNotification(uid, "Rapport match disponible", "La video, les statistiques et la timeline IA sont synchronisees.", { matchId: input.matchId }),
   ));
@@ -299,6 +322,7 @@ export async function syncVideoSession(input: {
   videoUrl: string;
   analysisId?: string;
   reportId?: string;
+  matchId?: string;
   match?: SyncedMatchResult;
 }) {
   const payload = {
@@ -308,6 +332,7 @@ export async function syncVideoSession(input: {
     videoUrl: input.videoUrl,
     analysisId: input.analysisId || "",
     reportId: input.reportId || "",
+    matchId: input.matchId || input.match?.matchId || "",
     match: input.match || null,
     createdAt: serverTimestamp(),
   };
@@ -340,4 +365,16 @@ export async function createNotification(userId: string, title: string, body: st
     createdAt: serverTimestamp(),
     ...extra,
   });
+}
+
+export async function markNotificationRead(notificationId: string) {
+  await updateDoc(doc(db, "notifications", notificationId), { read: true });
+}
+
+export async function deleteNotification(notificationId: string) {
+  await deleteDoc(doc(db, "notifications", notificationId));
+}
+
+export async function markAllNotificationsRead(notifications: NotificationItem[]) {
+  await Promise.all(notifications.filter((item) => !item.read).map((item) => markNotificationRead(item.id)));
 }

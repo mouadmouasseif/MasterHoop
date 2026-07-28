@@ -26,7 +26,7 @@ export default function LeaderboardPage() {
 
   const chart = players.map((player) => ({
     name: player.username.split(".")[0],
-    performance: Math.round((player.stats.madeShots / player.stats.shots) * 100),
+    performance: shootingPercentage(player),
     assists: player.stats.assists,
     defense: player.stats.steals + player.stats.blocks,
   }));
@@ -87,8 +87,12 @@ function rankPlayers(players: SocialPlayer[], key: string) {
 }
 
 function scorePlayer(player: SocialPlayer, key: string) {
-  if (key === "shooters") return Math.round((player.stats.madeShots / player.stats.shots) * 100);
+  if (key === "shooters") return shootingPercentage(player);
   if (key === "defenders") return player.stats.steals + player.stats.blocks;
   if (key === "passers") return player.stats.assists;
   return player.stats.madeShots + player.stats.assists + player.stats.rebounds + player.stats.steals * 2 + player.stats.blocks * 2;
+}
+
+function shootingPercentage(player: SocialPlayer) {
+  return Math.round((player.stats.madeShots / Math.max(1, player.stats.shots)) * 100);
 }

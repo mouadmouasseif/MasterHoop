@@ -45,6 +45,41 @@ export async function uploadPrivateFile(
   });
 }
 
+export async function uploadSharedMatchFile(
+  ownerUid: string,
+  matchId: string,
+  file: Blob | File,
+  folder: "videos" | "reports" | "thumbnails" = "videos",
+  participantUids: string[] = [ownerUid],
+  onProgress?: UploadProgressHandler,
+) {
+  const extension = folder === "thumbnails" ? "jpg" : folder === "reports" ? "json" : getVideoExtension(file);
+  const fileRef = ref(storage, `matches/${matchId}/${folder}/source.${extension}`);
+  const task = uploadBytesResumable(fileRef, file, {
+    contentType: file.type || (folder === "reports" ? "application/json" : folder === "thumbnails" ? "image/jpeg" : "video/webm"),
+    customMetadata: {
+      ownerUid,
+      matchId,
+      participantUids: participantUids.join(","),
+      shared: "true",
+    },
+  });
+
+  return new Promise<string>((resolve, reject) => {
+    task.on(
+      "state_changed",
+      (snapshot) => {
+        const progress = snapshot.totalBytes
+          ? Math.round((snapshot.bytesTransferred / snapshot.totalBytes) * 100)
+          : 0;
+        onProgress?.(progress, snapshot);
+      },
+      reject,
+      async () => resolve(await getDownloadURL(task.snapshot.ref)),
+    );
+  });
+}
+
 export async function retryUploadPrivateFile(
   userId: string,
   sessionId: string,

@@ -1,8 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Camera, CircleStop, Play, Radio, Target } from "lucide-react";
+import { Camera, CircleStop, Download, Play, Radio, Target } from "lucide-react";
 import type { AIMatchRecord, MatchStats, MatchTimelineEvent } from "@/src/types";
 import { createEmptyMatchStats, finishMatch, updateMatchAiFrame } from "@/src/services/socialService";
-import { uploadPrivateFile } from "@/src/services/firebaseStorage";
+import { uploadSharedMatchFile } from "@/src/services/firebaseStorage";
+import { buildMatchSummary } from "@/src/services/matchScoreService";
+import { downloadHighlightJson } from "@/src/services/highlightExportService";
+import type { MatchEvent } from "@/src/types/match";
 
 type Score = { A: number; B: number };
 
@@ -22,6 +25,11 @@ export default function AIMatchRecorder({ match, ownerUid }: { match: AIMatchRec
     const ids = [...(match.teamA || []), ...(match.teamB || [])];
     return ids.length ? ids : match.participantUids;
   }, [match.participantUids, match.teamA, match.teamB]);
+
+  const matchSummary = useMemo(
+    () => buildMatchSummary(match.id, timeline.map(toMatchEvent).reverse()),
+    [match.id, timeline],
+  );
 
   useEffect(() => {
     if (!recording) return undefined;
@@ -87,7 +95,7 @@ export default function AIMatchRecorder({ match, ownerUid }: { match: AIMatchRec
     setRecording(false);
     setStatus("Upload Storage et synchronisation participants...");
 
-    const videoUrl = blob.size ? await uploadPrivateFile(ownerUid, match.id, blob, "videos") : "";
+    const videoUrl = blob.size ? await uploadSharedMatchFile(ownerUid, match.id, blob, "videos", match.participantUids) : "";
     await finishMatch({
       matchId: match.id,
       ownerUid,
@@ -114,6 +122,9 @@ export default function AIMatchRecorder({ match, ownerUid }: { match: AIMatchRec
           <div className="mt-1 text-xs text-white/45">{status}</div>
         </div>
         <div className="flex gap-2">
+          <button onClick={() => downloadHighlightJson({ summary: matchSummary, videoUrl: match.videoUrl })} className="flex items-center gap-2 rounded-xl border border-white/10 px-4 py-3 text-xs font-black uppercase text-white/70">
+            <Download size={15} /> Export
+          </button>
           <button disabled={recording} onClick={start} className="flex items-center gap-2 rounded-xl bg-white px-4 py-3 text-xs font-black uppercase text-black disabled:opacity-40">
             <Play size={15} /> Start Match
           </button>
@@ -186,6 +197,25 @@ function buildSimulatedEvent(timestamp: number, match: AIMatchRecord, players: s
     playerId,
     team,
     points: type === "2 Points" ? 2 : type === "3 Points" ? 3 : undefined,
+  };
+}
+
+function toMatchEvent(event: MatchTimelineEvent): MatchEvent {
+  return {
+    id: event.id,
+    timestamp: event.timestamp,
+    team: event.team,
+    playerId: event.playerId,
+    points: event.points,
+    type: event.type === "2 Points" || event.type === "3 Points"
+      ? "made_shot"
+      : event.type === "Assist"
+      ? "pass"
+      : event.type === "Rebound"
+      ? "rebound"
+      : event.type === "Steal"
+      ? "steal"
+      : "score_change",
   };
 }
 

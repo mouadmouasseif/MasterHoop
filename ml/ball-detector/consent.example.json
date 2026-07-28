@@ -1,0 +1,12 @@
+{
+  "datasetVersion": "1.0.0",
+  "videos": [
+    {
+      "file": "example-session.mp4",
+      "consentId": "replace-with-private-consent-reference",
+      "allowsModelTraining": true,
+      "containsMinor": false,
+      "retentionUntil": "2027-07-24"
+    }
+  ]
+}

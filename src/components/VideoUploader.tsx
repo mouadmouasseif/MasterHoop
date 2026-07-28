@@ -83,11 +83,16 @@ export default function VideoUploader({
     try {
       const result = await analyzeUploadedVideo(file);
       setAnalysis(result);
+      if (!result.videoQuality?.analysisPossible) {
+        setError("Qualité insuffisante : corrigez la vidéo avant de l’enregistrer comme analyse.");
+        return;
+      }
       await saveTrainingSession({
         userId: user.uid,
         videoBlob: file,
-        duration: 0,
+        duration: Math.round(result.videoQuality.duration),
         drillName: "Uploaded Video",
+        metrics: result.observedMetrics,
         onProgress: setProgress,
       });
       onSaved?.();

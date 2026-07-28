@@ -66,7 +66,7 @@ export default function ProfilePage({
         </div>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-5">
         <Info label="Saison" value="2026" />
         <Info label="Matchs joues" value={`${sessions.length + analyses.length}`} />
         <Info label="Victoires" value={`${Math.max(1, Math.round(analyses.length * 0.62))}`} />

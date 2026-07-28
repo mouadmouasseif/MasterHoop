@@ -9,10 +9,13 @@ import SessionPlayer from "@/src/components/SessionPlayer";
 import { analyzeBasketballSession } from "@/src/services/aiAnalysisService";
 import { exportExcelWorkbook, exportProfessionalPdf, exportSessionsCsv } from "@/src/services/exportService";
 import { listTrainingSessions, type TrainingSession } from "@/src/services/sessionService";
+import { subscribeSharedVideos } from "@/src/services/socialService";
+import type { SharedVideoSession } from "@/src/types";
 
 export default function History({ user, refreshKey = 0 }: { user: User | null; refreshKey?: number }) {
   const [sessions, setSessions] = useState<TrainingSession[]>([]);
   const [selected, setSelected] = useState<TrainingSession | null>(null);
+  const [sharedVideos, setSharedVideos] = useState<SharedVideoSession[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -38,6 +41,11 @@ export default function History({ user, refreshKey = 0 }: { user: User | null; r
     };
   }, [user, refreshKey]);
 
+  useEffect(() => {
+    if (!user) return undefined;
+    return subscribeSharedVideos(user.uid, setSharedVideos);
+  }, [user]);
+
   const selectedAnalysis = selected
     ? analyzeBasketballSession({
         madeShots: Number(selected.metrics?.madeShots || 0),
@@ -45,7 +53,6 @@ export default function History({ user, refreshKey = 0 }: { user: User | null; r
         dribbleCount: Number(selected.metrics?.dribbleCount || 0),
       } as any)
     : null;
-  const sharedVideos = readSharedVideos();
   const recommendations = selected?.recommendations || selectedAnalysis?.suggestions || [];
 
   return (
@@ -87,14 +94,17 @@ export default function History({ user, refreshKey = 0 }: { user: User | null; r
         </div>
       )}
 
-      <div className="glass-card p-6">
+      <div className="glass-card max-w-full overflow-hidden p-6">
         <div className="mb-4 flex items-center gap-2 text-xl font-black uppercase"><Share2 className="text-brand-orange" /> Videos synchronisees</div>
-        <div className="grid gap-3 md:grid-cols-3">
-          {sharedVideos.map((item: any) => (
-            <div key={item.createdAt || item.videoUrl} className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
-              <div className="font-black">Video Session</div>
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          {sharedVideos.map((item) => (
+            <div key={item.id} className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
+              <div className="font-black">{item.matchId ? `Match ${item.matchId.slice(0, 8)}` : "Video Session"}</div>
               <div className="mt-1 text-xs text-white/40">{(item.participantUids || []).length} participant(s)</div>
               <div className="mt-3 text-xs text-brand-neon">Video, analyse IA, rapport et statistiques disponibles pour chaque membre.</div>
+              {item.videoUrl && (
+                <video src={item.videoUrl} controls className="mt-4 aspect-video w-full rounded-xl bg-black object-cover" />
+              )}
             </div>
           ))}
           {sharedVideos.length === 0 && <div className="text-sm text-white/45">Aucune video partagee pour le moment.</div>}
@@ -102,12 +112,4 @@ export default function History({ user, refreshKey = 0 }: { user: User | null; r
       </div>
     </motion.div>
   );
-}
-
-function readSharedVideos() {
-  try {
-    return JSON.parse(localStorage.getItem("masterHoopSyncedVideos") || "[]");
-  } catch {
-    return [];
-  }
 }

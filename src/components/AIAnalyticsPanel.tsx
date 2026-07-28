@@ -17,14 +17,48 @@ export default function AIAnalyticsPanel({ analysis }: { analysis: AIAnalysisRes
         </div>
       </div>
 
+      <div className="grid gap-3 sm:grid-cols-2">
+        <div className="rounded-xl border border-white/10 bg-black/25 p-3">
+          <div className="text-[10px] font-bold uppercase text-white/35">Confiance globale</div>
+          <div className="mt-1 text-xl font-black">{analysis.confidenceScore}%</div>
+        </div>
+        {analysis.videoQuality && (
+          <div className="rounded-xl border border-white/10 bg-black/25 p-3">
+            <div className="text-[10px] font-bold uppercase text-white/35">Qualité vidéo</div>
+            <div className="mt-1 text-xl font-black">{analysis.videoQuality.score}%</div>
+            <div className="mt-1 text-xs text-white/45">
+              Pose visible sur {analysis.videoQuality.poseFrames}/{analysis.videoQuality.sampledFrames} images
+            </div>
+            <div className="mt-1 text-xs text-white/45">
+              Prétraitement {analysis.videoQuality.preprocessing.engine.toUpperCase()}
+              {analysis.videoQuality.preprocessing.engine === "opencv"
+                ? ` · ${analysis.videoQuality.preprocessing.stabilizedFrames} images stabilisées`
+                : ""}
+            </div>
+          </div>
+        )}
+      </div>
+
       <div className="grid gap-3 sm:grid-cols-5">
-        {Object.entries(analysis.metrics).map(([key, value]) => (
+        {(Object.entries(analysis.metrics) as [keyof typeof analysis.metrics, number][]).map(([key, value]) => (
           <div key={key} className="rounded-xl border border-white/10 bg-black/25 p-3">
             <div className="text-[10px] font-bold uppercase text-white/35">{key.replace(/([A-Z])/g, " $1")}</div>
             <div className="mt-1 text-xl font-black">{value}</div>
+            <div className="text-[10px] text-white/35">
+              Confiance {analysis.metricConfidence[key].confidence}%
+            </div>
           </div>
         ))}
       </div>
+
+      {analysis.videoQuality && analysis.videoQuality.recommendations.length > 0 && (
+        <List
+          title="Qualité vidéo"
+          icon={<Target size={16} />}
+          items={analysis.videoQuality.recommendations}
+          color={analysis.videoQuality.analysisPossible ? "text-brand-neon" : "text-amber-300"}
+        />
+      )}
 
       <div className="grid gap-4 md:grid-cols-3">
         <List title="Strengths" icon={<CheckCircle2 size={16} />} items={analysis.strengths} color="text-brand-neon" />

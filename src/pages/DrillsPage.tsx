@@ -1,8 +1,7 @@
 import { motion } from 'motion/react';
-import { Camera, Film, Play, Sparkles, Target, Timer, Upload } from 'lucide-react';
+import { Camera, Film, Sparkles, Target, Timer, Upload } from 'lucide-react';
 import type { Drill } from '@/src/components/drills/DrillTutorials';
 import VideoUploadAnalyzer from '@/src/components/analysis/VideoUploadAnalyzer';
-import { createVideoAnalysis, saveLocalAnalysis } from '@/src/services/localAnalysisService';
 
 const drills: Array<Drill & { title: string; target: string; video: string; steps: string[] }> = [
   {
@@ -50,12 +49,6 @@ const drills: Array<Drill & { title: string; target: string; video: string; step
 ];
 
 export default function DrillsPage({ onStartDrill }: { onStartDrill: (drill: Drill) => void }) {
-  const runQuickTest = (drill: Drill & { title: string }) => {
-    const analysis = createVideoAnalysis(`${drill.id}-camera-test.webm`, 'drill', drill.title);
-    saveLocalAnalysis(analysis);
-    onStartDrill(drill);
-  };
-
   return (
     <motion.div key="drills" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-8">
       <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
@@ -117,12 +110,6 @@ export default function DrillsPage({ onStartDrill }: { onStartDrill: (drill: Dri
                   className="flex items-center justify-center gap-2 rounded-xl bg-brand-orange px-4 py-3 text-sm font-black text-white transition hover:brightness-110"
                 >
                   <Camera size={17} /> Start AI Analysis
-                </button>
-                <button
-                  onClick={() => runQuickTest(drill)}
-                  className="flex items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm font-bold text-white/70 transition hover:bg-white/10"
-                >
-                  <Play size={17} /> Test + Save stats
                 </button>
                 <VideoUploadAnalyzer drill={drill.title} />
               </div>

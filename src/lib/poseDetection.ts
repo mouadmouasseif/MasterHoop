@@ -1,7 +1,10 @@
 import * as poseDetection from '@tensorflow-models/pose-detection';
 import * as tf from '@tensorflow/tfjs-core';
 import '@tensorflow/tfjs-backend-webgl';
-import * as cocoSsd from '@tensorflow-models/coco-ssd';
+import {
+  HybridBasketballObjectDetector,
+  type BasketballDetectedObject,
+} from "@/src/services/basketballObjectDetector";
 
 export type PoseMetrics = {
   elbowAngle: number;
@@ -10,6 +13,8 @@ export type PoseMetrics = {
   isShooting: boolean;
   isDribbling: boolean;
   ballDetected: boolean;
+  ballConfidence: number;
+  ballDetectorSource: "masterhoop-model" | "coco-ssd";
   ballPos: { x: number, y: number } | null;
   ballVelocity: { vx: number, vy: number };
   hasBall: boolean;
@@ -34,7 +39,7 @@ export type PoseMetrics = {
 
 export class PoseAnalyzer {
   private detector: poseDetection.PoseDetector | null = null;
-  private objectModel: cocoSsd.ObjectDetection | null = null;
+  private objectModel: HybridBasketballObjectDetector | null = null;
   private lastWristY: number | null = null;
   private madeShots: number = 0;
   private missedShots: number = 0;
@@ -85,19 +90,24 @@ export class PoseAnalyzer {
       poseDetection.SupportedModels.MoveNet,
       { modelType: poseDetection.movenet.modelType.SINGLEPOSE_LIGHTNING }
     );
-    this.objectModel = await cocoSsd.load();
+    this.objectModel = new HybridBasketballObjectDetector();
+    await this.objectModel.initialize();
   }
 
-  async analyzeFrame(video: HTMLVideoElement): Promise<{ 
+  async analyzeFrame(video: HTMLVideoElement | HTMLCanvasElement): Promise<{
     poses: poseDetection.Pose[], 
-    objects: cocoSsd.DetectedObject[],
+    objects: BasketballDetectedObject[],
     metrics: PoseMetrics 
   } | null> {
     try {
       if (!this.detector || !this.objectModel) return null;
       
       // Ensure video is ready and has valid dimensions to avoid internal library errors (like yMin access on null)
-      if (video.readyState < 2 || video.videoWidth === 0 || video.videoHeight === 0) {
+      const isVideo = video instanceof HTMLVideoElement;
+      if (
+        (isVideo && (video.readyState < 2 || video.videoWidth === 0 || video.videoHeight === 0)) ||
+        (!isVideo && (video.width === 0 || video.height === 0))
+      ) {
         return null;
       }
 
@@ -108,7 +118,7 @@ export class PoseAnalyzer {
         }),
         this.objectModel.detect(video).catch(e => {
           console.warn("Object detection failed:", e);
-          return [] as cocoSsd.DetectedObject[];
+          return [] as BasketballDetectedObject[];
         })
       ]);
 
@@ -117,7 +127,9 @@ export class PoseAnalyzer {
       const pose = poses[0];
       if (!pose || !pose.keypoints) return null;
 
-      const metrics = this.calculateMetrics(pose, objects || [], video.videoWidth, video.videoHeight);
+      const width = isVideo ? video.videoWidth : video.width;
+      const height = isVideo ? video.videoHeight : video.height;
+      const metrics = this.calculateMetrics(pose, objects || [], width, height);
 
       return { poses, objects, metrics };
     } catch (error) {
@@ -126,7 +138,7 @@ export class PoseAnalyzer {
     }
   }
 
-  private calculateMetrics(pose: poseDetection.Pose, objects: cocoSsd.DetectedObject[], width: number, height: number): PoseMetrics {
+  private calculateMetrics(pose: poseDetection.Pose, objects: BasketballDetectedObject[], width: number, height: number): PoseMetrics {
     const keypoints = pose.keypoints;
     const find = (name: string) => keypoints.find(k => k.name === name);
 
@@ -137,6 +149,7 @@ export class PoseAnalyzer {
     const knee = find('right_knee');
     const ankle = find('right_ankle');
     const nose = find('nose');
+    const leftWristForBall = find('left_wrist');
 
     let elbowAngle = 0;
     if (shoulder && elbow && wrist && elbow.score! > 0.3) {
@@ -152,7 +165,20 @@ export class PoseAnalyzer {
     const now = Date.now();
     const ballDetections = objects
       .filter(obj => obj.class === 'sports ball' && obj.score > 0.45)
-      .sort((a, b) => b.score - a.score);
+      .sort((a, b) => {
+        const rank = (object: BasketballDetectedObject) => {
+          const centerX = object.bbox[0] + object.bbox[2] / 2;
+          const centerY = object.bbox[1] + object.bbox[3] / 2;
+          const wristDistances = [wrist, leftWristForBall]
+            .filter((point): point is NonNullable<typeof point> => Boolean(point && (point.score ?? 0) > 0.25))
+            .map((point) => Math.hypot(centerX - point.x, centerY - point.y));
+          const nearestWrist = wristDistances.length ? Math.min(...wristDistances) : width;
+          const proximityBonus = Math.max(0, 1 - nearestWrist / Math.max(width * 0.45, 1)) * 0.18;
+          const specializedBonus = object.source === "masterhoop-model" ? 0.12 : 0;
+          return object.score + proximityBonus + specializedBonus;
+        };
+        return rank(b) - rank(a);
+      });
 
     let bestBall = null;
     let ballDetected = false;
@@ -516,6 +542,8 @@ export class PoseAnalyzer {
       isShooting,
       isDribbling,
       ballDetected,
+      ballConfidence: bestBall ? Math.round(bestBall.score * 100) : 0,
+      ballDetectorSource: this.objectModel?.getStatus().source || "coco-ssd",
       ballPos,
       ballVelocity: { ...this.ballVelocity },
       hasBall,

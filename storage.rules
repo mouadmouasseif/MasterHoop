@@ -1,25 +1,43 @@
 rules_version = '2';
 service firebase.storage {
   match /b/{bucket}/o {
-    function isSignedIn() {
+    function signedIn() {
       return request.auth != null;
     }
 
     function isOwner(userId) {
-      return isSignedIn() && request.auth.uid == userId;
+      return signedIn() && request.auth.uid == userId;
     }
 
-    match /users/{userId}/sessions/{sessionId}/{allPaths=**} {
-      allow read: if isOwner(userId);
-      allow write: if isOwner(userId)
-        && request.resource.size < 220 * 1024 * 1024
+    function isSafeUpload(maxMb) {
+      return request.resource.size < maxMb * 1024 * 1024
         && (
           request.resource.contentType.matches('video/.*')
           || request.resource.contentType.matches('image/.*')
           || request.resource.contentType == 'application/json'
           || request.resource.contentType == 'text/csv'
         );
-      allow delete: if isOwner(userId);
+    }
+
+    match /users/{userId}/sessions/{sessionId}/{allPaths=**} {
+      allow read, delete: if isOwner(userId);
+      allow write: if isOwner(userId) && isSafeUpload(220);
+    }
+
+    match /matches/{matchId}/{allPaths=**} {
+      allow read: if signedIn() && (
+        resource.metadata.ownerUid == request.auth.uid
+        || resource.metadata.participantUids.matches('(^|.*,)' + request.auth.uid + '(,.*|$)')
+      );
+      allow write: if signedIn()
+        && request.resource.metadata.ownerUid == request.auth.uid
+        && isSafeUpload(320);
+      allow delete: if signedIn() && resource.metadata.ownerUid == request.auth.uid;
+    }
+
+    match /highlights/{userId}/{allPaths=**} {
+      allow read, delete: if isOwner(userId);
+      allow write: if isOwner(userId) && isSafeUpload(220);
     }
 
     match /{allPaths=**} {

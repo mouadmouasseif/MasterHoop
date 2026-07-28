@@ -9,7 +9,9 @@ import CameraSelector from '@/src/components/CameraSelector';
 import FullscreenButton from '@/src/components/FullscreenButton';
 import ScanButton from '@/src/components/ScanButton';
 import ScoreBoard from '@/src/components/ScoreBoard';
-import * as cocoSsd from '@tensorflow-models/coco-ssd';
+import type { BasketballDetectedObject } from "@/src/services/basketballObjectDetector";
+import { scanCourtFromMetrics } from '@/src/services/courtScanService';
+import { renderCourtOverlay } from '@/src/services/courtOverlayRenderer';
 
 
 interface CameraRecorderProps {
@@ -455,7 +457,7 @@ export function CameraRecorder({
     ctx.restore();
   };
 
-  const drawPose = useCallback((poses: any[], objects: cocoSsd.DetectedObject[], metrics: PoseMetrics | null, ctx: CanvasRenderingContext2D) => {
+  const drawPose = useCallback((poses: any[], objects: BasketballDetectedObject[], metrics: PoseMetrics | null, ctx: CanvasRenderingContext2D) => {
     const w = ctx.canvas.width;
     const h = ctx.canvas.height;
     ctx.clearRect(0, 0, w, h);
@@ -474,6 +476,27 @@ export function CameraRecorder({
     // Draw mini-map instead of full overlay
     drawCourtMiniMap(ctx, courtType);
     drawScoreHud(ctx, metrics);
+
+    const playerKeypoints = poses?.[0]?.keypoints || [];
+    const confidentPlayerPoints = playerKeypoints.filter((point: any) => (point.score ?? 1) > 0.35);
+    const playerCenter = confidentPlayerPoints.length
+      ? {
+          x: confidentPlayerPoints.reduce((sum: number, point: any) => sum + point.x, 0) / confidentPlayerPoints.length,
+          y: confidentPlayerPoints.reduce((sum: number, point: any) => sum + point.y, 0) / confidentPlayerPoints.length,
+        }
+      : undefined;
+    const scan = scanCourtFromMetrics({
+      width: w,
+      height: h,
+      metrics,
+      hoopPosition: {
+        x: w * (analyzerRef.current?.hoopPos.x || 0.5),
+        y: h * (analyzerRef.current?.hoopPos.y || 0.22),
+      },
+      previousTrail: ballTrailRef.current.map((point) => ({ x: point.x, y: point.y })),
+      playerCenter,
+    });
+    renderCourtOverlay(ctx, scan);
 
     // Define logical hoop position for visualization
     const hoopPos = {

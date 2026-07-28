@@ -47,7 +47,7 @@ export interface UserProfile {
   preferredShot: string;
   basketballPosition?: string;
 }
-export type ActiveTab = 'live' | 'games' | 'friends' | 'teams' | 'leaderboard' | 'stats' | 'coach' | 'history' | 'drills' | 'profile';
+export type ActiveTab = 'live' | 'games' | 'friends' | 'teams' | 'leaderboard' | 'notifications' | 'stats' | 'coach' | 'history' | 'drills' | 'profile';
 export type TrainingMode = 'FREESTYLE' | 'TARGETED';
 export type SessionToSave = { blob: Blob; metrics: PoseMetrics } | null;
 export type AppUser = FirebaseUser | null;
@@ -103,7 +103,7 @@ export type SocialPlayer = {
   stats: PlayerStats;
 };
 
-export type FriendRequestStatus = 'pending' | 'accepted' | 'blocked';
+export type FriendRequestStatus = 'pending' | 'accepted' | 'blocked' | 'friend_request_pending' | 'friend_request_accepted' | 'friend_request_rejected';
 
 export type TeamProfile = {
   teamId: string;
@@ -128,7 +128,7 @@ export type SyncedMatchResult = {
 };
 
 export type MatchType = '1vs1' | '3vs3' | '5vs5';
-export type MatchStatus = 'waiting' | 'active' | 'finished';
+export type MatchStatus = 'waiting' | 'active' | 'finished' | 'match_invite_pending' | 'match_ready' | 'match_live' | 'match_finished' | 'match_cancelled';
 
 export type MatchTimelineEvent = {
   id: string;
@@ -188,4 +188,18 @@ export type NotificationItem = {
   createdAt?: any;
   matchId?: string;
   teamId?: string;
+};
+
+export type SharedVideoSession = {
+  id: string;
+  userId: string;
+  ownerUid: string;
+  participantUids: string[];
+  videoUrl: string;
+  thumbnailUrl?: string;
+  analysisId?: string;
+  reportId?: string;
+  matchId?: string;
+  match?: SyncedMatchResult | null;
+  createdAt?: any;
 };

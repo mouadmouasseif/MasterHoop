@@ -1,11 +1,10 @@
 import tailwindcss from '@tailwindcss/vite';
 import react from '@vitejs/plugin-react';
 import path from 'path';
-import {defineConfig, loadEnv} from 'vite';
+import {defineConfig} from 'vite';
 import { VitePWA } from 'vite-plugin-pwa';
 
-export default defineConfig(({mode}) => {
-  const env = loadEnv(mode, '.', '');
+export default defineConfig(() => {
   return {
     plugins: [
       react(),
@@ -41,8 +40,17 @@ export default defineConfig(({mode}) => {
         workbox: {
           navigateFallback: '/',
           globPatterns: ['**/*.{js,css,html,png,svg,ico,webmanifest}'],
+          globIgnores: ['**/opencv-*.js'],
           maximumFileSizeToCacheInBytes: 4 * 1024 * 1024,
           runtimeCaching: [
+            {
+              urlPattern: /\/assets\/opencv-[^/]+\.js$/i,
+              handler: 'CacheFirst',
+              options: {
+                cacheName: 'master-hoop-opencv-runtime',
+                expiration: { maxEntries: 1, maxAgeSeconds: 60 * 60 * 24 * 30 },
+              },
+            },
             {
               urlPattern: /^https:\/\/firebasestorage\.googleapis\.com\/.*/i,
               handler: 'NetworkFirst',
@@ -55,9 +63,6 @@ export default defineConfig(({mode}) => {
         },
       }),
     ],
-    define: {
-      'process.env.GEMINI_API_KEY': JSON.stringify(env.GEMINI_API_KEY),
-    },
     resolve: {
       alias: {
         '@': path.resolve(__dirname, '.'),
@@ -67,6 +72,9 @@ export default defineConfig(({mode}) => {
       // HMR is disabled in AI Studio via DISABLE_HMR env var.
       // Do not modifyâfile watching is disabled to prevent flickering during agent edits.
       hmr: process.env.DISABLE_HMR !== 'true',
+    },
+    worker: {
+      format: 'es' as const,
     },
     build: {
       rollupOptions: {
@@ -81,6 +89,7 @@ export default defineConfig(({mode}) => {
               '@tensorflow-models/pose-detection',
               '@tensorflow-models/coco-ssd',
             ],
+            opencv: ['@techstark/opencv-js'],
           },
         },
       },

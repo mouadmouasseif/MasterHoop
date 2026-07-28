@@ -1,6 +1,12 @@
-import { Upload, Wand2 } from 'lucide-react';
+import { AlertCircle, Upload, Wand2 } from 'lucide-react';
 import { useRef, useState } from 'react';
-import { createVideoAnalysis, saveLocalAnalysis, type LocalAnalysis } from '@/src/services/localAnalysisService';
+import AIAnalyticsPanel from '@/src/components/AIAnalyticsPanel';
+import { analyzeUploadedVideo, type AIAnalysisResult } from '@/src/services/aiAnalysisService';
+import {
+  createMeasuredVideoAnalysis,
+  saveLocalAnalysis,
+  type LocalAnalysis,
+} from '@/src/services/localAnalysisService';
 
 export default function VideoUploadAnalyzer({
   drill,
@@ -11,19 +17,61 @@ export default function VideoUploadAnalyzer({
 }) {
   const inputRef = useRef<HTMLInputElement | null>(null);
   const [status, setStatus] = useState('');
+  const [error, setError] = useState('');
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [analysisResult, setAnalysisResult] = useState<AIAnalysisResult | null>(null);
 
-  const handleFile = (file?: File) => {
+  const handleFile = async (file?: File) => {
     if (!file) return;
 
     const videoUrl = URL.createObjectURL(file);
-    setStatus('Analyse IA en cours...');
+    setStatus('Contrôle qualité et extraction des images...');
+    setError('');
+    setAnalysisResult(null);
+    setIsProcessing(true);
 
-    window.setTimeout(() => {
-      const analysis = createVideoAnalysis(file.name, 'upload', drill, videoUrl);
+    try {
+      const result = await analyzeUploadedVideo(file);
+      setAnalysisResult(result);
+
+      if (!result.videoQuality?.analysisPossible) {
+        setStatus('');
+        setError('Qualité insuffisante. Suivez les recommandations avant de sauvegarder cette analyse.');
+        URL.revokeObjectURL(videoUrl);
+        return;
+      }
+
+      const analysis = createMeasuredVideoAnalysis({
+        fileName: file.name,
+        videoUrl,
+        source: 'upload',
+        drill,
+        score: result.score,
+        confidenceScore: result.confidenceScore,
+        qualityScore: result.videoQuality.score,
+        madeShots: result.observedMetrics?.madeShots,
+        missedShots: result.observedMetrics?.missedShots,
+        strengths: result.strengths,
+        weaknesses: result.weaknesses,
+        recommendations: result.suggestions,
+      });
       saveLocalAnalysis(analysis);
-      setStatus(`Rapport sauvegarde: score ${analysis.score}%`);
+      setStatus(
+        `Rapport sauvegardé — score ${analysis.score}/100, confiance ${analysis.confidenceScore}%`,
+      );
       onAnalyzed?.(analysis);
-    }, 700);
+    } catch (analysisError) {
+      URL.revokeObjectURL(videoUrl);
+      setStatus('');
+      setError(
+        analysisError instanceof Error
+          ? analysisError.message
+          : "L’analyse de cette vidéo a échoué.",
+      );
+    } finally {
+      setIsProcessing(false);
+      if (inputRef.current) inputRef.current.value = '';
+    }
   };
 
   return (
@@ -46,11 +94,18 @@ export default function VideoUploadAnalyzer({
       />
       <button
         onClick={() => inputRef.current?.click()}
-        className="flex w-full items-center justify-center gap-2 rounded-xl bg-brand-orange px-4 py-3 text-sm font-black text-white transition hover:brightness-110"
+        disabled={isProcessing}
+        className="flex w-full items-center justify-center gap-2 rounded-xl bg-brand-orange px-4 py-3 text-sm font-black text-white transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50"
       >
-        <Wand2 size={17} /> Upload & Analyze
+        <Wand2 size={17} /> {isProcessing ? 'Analyse en cours…' : 'Importer et analyser'}
       </button>
       {status && <div className="mt-3 rounded-xl bg-black/30 px-3 py-2 text-xs text-brand-neon">{status}</div>}
+      {error && (
+        <div className="mt-3 flex items-center gap-2 rounded-xl border border-red-500/20 bg-red-500/10 px-3 py-2 text-xs text-red-200">
+          <AlertCircle size={15} /> {error}
+        </div>
+      )}
+      {analysisResult && <div className="mt-4"><AIAnalyticsPanel analysis={analysisResult} /></div>}
     </div>
   );
 }

@@ -55,8 +55,8 @@ export default function GameModesPage({ user, profile }: { user: FirebaseUser | 
     return () => window.clearInterval(timer);
   }, []);
 
-  const activeMatch = matches.find((match) => match.id === activeMatchId) || matches.find((match) => match.status === "active");
-  const waitingMatches = matches.filter((match) => match.status === "waiting");
+  const activeMatch = matches.find((match) => match.id === activeMatchId) || matches.find((match) => match.status === "active" || match.status === "match_live" || match.status === "match_ready");
+  const waitingMatches = matches.filter((match) => match.status === "waiting" || match.status === "match_invite_pending");
   const recentMatches = matches.slice(0, 8);
   const selectedFriend = friends.find((friend) => friend.uid === selectedFriendId);
 
@@ -107,7 +107,7 @@ export default function GameModesPage({ user, profile }: { user: FirebaseUser | 
         </div>
       </div>
 
-      <div className="grid gap-3 md:grid-cols-3">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
         {(Object.keys(modeConfig) as GameMode[]).map((item) => (
           <button
             key={item}
@@ -120,7 +120,7 @@ export default function GameModesPage({ user, profile }: { user: FirebaseUser | 
         ))}
       </div>
 
-      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard icon={<Users />} value={`${friends.length}`} label="Amis live" color="text-brand-neon" />
         <StatCard icon={<Shield />} value={`${teams.length}`} label="Equipes" color="text-brand-orange" />
         <StatCard icon={<Bell />} value={`${notifications.filter((item) => !item.read).length}`} label="Notifications" />

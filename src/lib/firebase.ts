@@ -10,39 +10,34 @@ import { getAnalytics } from "firebase/analytics";
 
 // Firebase config
 const firebaseConfig = {
-  apiKey:
-    import.meta.env.VITE_FIREBASE_API_KEY ||
-    "AIzaSyDQDglkkDxNUh_Qa9hVh6cvWtS-Tf_w-MY",
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY || "",
 
-  authDomain:
-    import.meta.env.VITE_FIREBASE_AUTH_DOMAIN ||
-    "master-hoop-a1d0a.firebaseapp.com",
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || "",
 
-  projectId:
-    import.meta.env.VITE_FIREBASE_PROJECT_ID ||
-    "master-hoop-a1d0a",
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || "",
 
-  storageBucket:
-    import.meta.env.VITE_FIREBASE_STORAGE_BUCKET ||
-    "master-hoop-a1d0a.firebasestorage.app",
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || "",
 
-  messagingSenderId:
-    import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID ||
-    "390685374202",
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || "",
 
-  appId:
-    import.meta.env.VITE_FIREBASE_APP_ID ||
-    "1:390685374202:web:5e400bb84d7ea7543ebb43",
+  appId: import.meta.env.VITE_FIREBASE_APP_ID || "",
 
-  measurementId:
-    import.meta.env.VITE_FIREBASE_MEASUREMENT_ID ||
-    "G-XSD3Z1TM84",
+  measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID || "",
 };
 
-// Debug logs
-console.log("Firebase config:", firebaseConfig);
-console.log("Auth domain:", firebaseConfig.authDomain);
-console.log("Project ID:", firebaseConfig.projectId);
+const missingFirebaseKeys = Object.entries(firebaseConfig)
+  .filter(([key, value]) => key !== "measurementId" && !value)
+  .map(([key]) => key);
+
+if (missingFirebaseKeys.length > 0) {
+  throw new Error(
+    `Configuration Firebase incomplete: ${missingFirebaseKeys.join(", ")}. Verifie .env.local et .env.example.`
+  );
+}
+
+if (!firebaseConfig.apiKey.startsWith("AIza")) {
+  throw new Error("Configuration Firebase invalide: VITE_FIREBASE_API_KEY ne ressemble pas a une cle Web Firebase.");
+}
 
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
