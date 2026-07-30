@@ -1,6 +1,16 @@
 import type { User as FirebaseUser } from 'firebase/auth';
 import type { PoseMetrics } from '@/src/lib/poseDetection';
-export interface Shot { x: number; y: number; z: number; shotType: string; outcome: 'made' | 'missed'; }
+import type { AccountStatus, UserRole } from '@/src/auth/types';
+export interface Shot {
+  x?: number;
+  y?: number;
+  z?: number;
+  shotType?: string;
+  outcome: 'made' | 'missed' | 'unknown';
+  source?: string;
+  confidence?: number;
+  status?: 'measured' | 'estimated' | 'unavailable';
+}
 export interface Session {
   id: string;
   userId: string;
@@ -26,6 +36,7 @@ export interface Session {
   notes?: string;
 }
 export interface UserProfile {
+  id?: string;
   userId: string;
   uid?: string;
   name: string;
@@ -33,6 +44,14 @@ export interface UserProfile {
   fullName?: string;
   photoURL?: string;
   email?: string;
+  displayName?: string;
+  role?: UserRole;
+  clubId?: string;
+  coachId?: string;
+  athleteIds?: string[];
+  accountStatus?: AccountStatus;
+  createdAt?: unknown;
+  updatedAt?: unknown;
   uniquePlayerId?: string;
   qrCode?: string;
   followers?: number;
@@ -57,10 +76,10 @@ export type DrillCategory = 'Shooting' | 'Dribbling' | 'Finishing' | 'Defense' |
 
 export type PlayerAnalysisReport = {
   player: string;
-  offense_score: number;
-  defense_score: number;
-  speed: number;
-  distance: number;
+  offense_score: number | null;
+  defense_score: number | null;
+  speed: number | null;
+  distance: number | null;
   weaknesses: string[];
   recommendations: string[];
 };

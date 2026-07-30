@@ -1,10 +1,13 @@
 import * as poseDetection from '@tensorflow-models/pose-detection';
 import * as tf from '@tensorflow/tfjs-core';
 import '@tensorflow/tfjs-backend-webgl';
-import {
-  HybridBasketballObjectDetector,
-  type BasketballDetectedObject,
-} from "@/src/services/basketballObjectDetector";
+import type { BasketballDetectedObject } from "@/src/services/basketballObjectDetector";
+import { BallTemporalTracker } from "@/src/ai/tracking/BallTemporalTracker";
+import type { BallDetection, VisionModelAdapter } from "@/src/ai/types";
+import type { BallModelInput } from "@/src/ai/adapters/HybridBallModelAdapter";
+import { modelManager } from "@/src/ai/core/defaultModels";
+import { ShotAnalysisEngine } from "@/src/ai/shot/ShotAnalysisEngine";
+import type { CourtGeometry, ShotSequenceAnalysis } from "@/src/ai/types";
 
 export type PoseMetrics = {
   elbowAngle: number;
@@ -14,7 +17,7 @@ export type PoseMetrics = {
   isDribbling: boolean;
   ballDetected: boolean;
   ballConfidence: number;
-  ballDetectorSource: "masterhoop-model" | "coco-ssd";
+  ballDetectorSource: "BasketMotion-Ai-model" | "coco-ssd";
   ballPos: { x: number, y: number } | null;
   ballVelocity: { vx: number, vy: number };
   hasBall: boolean;
@@ -29,7 +32,7 @@ export type PoseMetrics = {
   dribbleCount: number;
   dribblePower: number;
   dribbleRhythm: number;
-  shots: { x: number, y: number, z: number, shotType: string, outcome: 'made' | 'missed' }[];
+  shots: { x?: number, y?: number, shotType?: string, outcome: 'made' | 'missed' | 'unknown', confidence: number, source: string }[];
   courtStatus: {
     in3PtRange: boolean;
     inPaint: boolean;
@@ -39,7 +42,7 @@ export type PoseMetrics = {
 
 export class PoseAnalyzer {
   private detector: poseDetection.PoseDetector | null = null;
-  private objectModel: HybridBasketballObjectDetector | null = null;
+  private objectModel: VisionModelAdapter<BallModelInput, BallDetection[]> | null = null;
   private lastWristY: number | null = null;
   private madeShots: number = 0;
   private missedShots: number = 0;
@@ -57,7 +60,10 @@ export class PoseAnalyzer {
   private lastStepX: number | null = null;
   private lateralSwings: number[] = [];
   private driveStartTime: number = 0;
-  private shots: { x: number, y: number, z: number, shotType: string, outcome: 'made' | 'missed' }[] = [];
+  private shots: { x?: number, y?: number, shotType?: string, outcome: 'made' | 'missed' | 'unknown', confidence: number, source: string }[] = [];
+  private readonly temporalBallTracker = new BallTemporalTracker(3, 60);
+  private readonly shotAnalysisEngine = new ShotAnalysisEngine(240);
+  private frameIndex = 0;
   
   // Court Configuration (normalized 0-1)
   public perspective: 'front' | 'side-left' | 'side-right' = 'front';
@@ -79,8 +85,6 @@ export class PoseAnalyzer {
   private persistenceTime: number = 800; // Keep ball active for 0.8s after loss
   private alpha: number = 0.5; // Base smoothing factor for ball position
   private velAlpha: number = 0.4; // Base velocity smoothing factor
-  private gravity: number = 980; // px/s^2 for prediction
-  private friction: number = 0.98; // Damping during prediction
   private moveHistory: { metrics: any, timestamp: number }[] = [];
   private ballDetectionCount: number = 0;
 
@@ -90,11 +94,15 @@ export class PoseAnalyzer {
       poseDetection.SupportedModels.MoveNet,
       { modelType: poseDetection.movenet.modelType.SINGLEPOSE_LIGHTNING }
     );
-    this.objectModel = new HybridBasketballObjectDetector();
-    await this.objectModel.initialize();
+    await modelManager.load("hybrid-ball-detector");
+    this.objectModel = modelManager.getAdapter<BallModelInput, BallDetection[]>("hybrid-ball-detector");
+    if (!this.objectModel) throw new Error("Le détecteur de ballon n’a pas pu être initialisé.");
   }
 
-  async analyzeFrame(video: HTMLVideoElement | HTMLCanvasElement): Promise<{
+  async analyzeFrame(
+    video: HTMLVideoElement | HTMLCanvasElement,
+    context?: { frameIndex?: number; timestampMs?: number },
+  ): Promise<{
     poses: poseDetection.Pose[], 
     objects: BasketballDetectedObject[],
     metrics: PoseMetrics 
@@ -111,15 +119,24 @@ export class PoseAnalyzer {
         return null;
       }
 
+      const analysisFrameIndex = context?.frameIndex ?? this.frameIndex;
+      const analysisTimestampMs = context?.timestampMs ?? Date.now();
       const [poses, objects] = await Promise.all([
         this.detector.estimatePoses(video).catch(e => {
           console.warn("Pose detection failed:", e);
           return [] as poseDetection.Pose[];
         }),
-        this.objectModel.detect(video).catch(e => {
-          console.warn("Object detection failed:", e);
-          return [] as BasketballDetectedObject[];
-        })
+        this.objectModel.predict({ source: video, frameIndex: analysisFrameIndex, timestampMs: analysisTimestampMs })
+          .then((detections) => detections.map((detection): BasketballDetectedObject => ({
+            bbox: [detection.bbox.x, detection.bbox.y, detection.bbox.width, detection.bbox.height],
+            class: "sports ball",
+            score: detection.confidence,
+            source: detection.detector === "BasketMotion-Ai" ? "BasketMotion-Ai-model" : "coco-ssd",
+          })))
+          .catch(e => {
+            console.warn("Object detection failed:", e);
+            return [] as BasketballDetectedObject[];
+          })
       ]);
 
       if (!poses || poses.length === 0) return null;
@@ -129,7 +146,15 @@ export class PoseAnalyzer {
 
       const width = isVideo ? video.videoWidth : video.width;
       const height = isVideo ? video.videoHeight : video.height;
-      const metrics = this.calculateMetrics(pose, objects || [], width, height);
+      const metrics = this.calculateMetrics(
+        pose,
+        objects || [],
+        width,
+        height,
+        analysisFrameIndex,
+        analysisTimestampMs,
+      );
+      this.frameIndex = Math.max(this.frameIndex + 1, analysisFrameIndex + 1);
 
       return { poses, objects, metrics };
     } catch (error) {
@@ -138,7 +163,27 @@ export class PoseAnalyzer {
     }
   }
 
-  private calculateMetrics(pose: poseDetection.Pose, objects: BasketballDetectedObject[], width: number, height: number): PoseMetrics {
+  getShotSequenceAnalysis(): ShotSequenceAnalysis {
+    return this.shotAnalysisEngine.analyze();
+  }
+
+  setCourtCalibration(calibration: CourtGeometry | null): void {
+    this.shotAnalysisEngine.setCourtCalibration(calibration);
+  }
+
+  resetShotSequenceAnalysis(): void {
+    this.temporalBallTracker.reset();
+    this.shotAnalysisEngine.reset();
+  }
+
+  private calculateMetrics(
+    pose: poseDetection.Pose,
+    objects: BasketballDetectedObject[],
+    width: number,
+    height: number,
+    frameIndex: number,
+    timestampMs: number,
+  ): PoseMetrics {
     const keypoints = pose.keypoints;
     const find = (name: string) => keypoints.find(k => k.name === name);
 
@@ -161,8 +206,9 @@ export class PoseAnalyzer {
       kneeAngle = this.calculateAngle(hip, knee, ankle);
     }
 
-    // Robust Ball Detection & Tracking
-    const now = Date.now();
+    // Ball detection and temporal tracking. Predicted points remain explicitly
+    // distinct from observed detections and never validate a shot outcome.
+    const now = timestampMs;
     const ballDetections = objects
       .filter(obj => obj.class === 'sports ball' && obj.score > 0.45)
       .sort((a, b) => {
@@ -174,114 +220,38 @@ export class PoseAnalyzer {
             .map((point) => Math.hypot(centerX - point.x, centerY - point.y));
           const nearestWrist = wristDistances.length ? Math.min(...wristDistances) : width;
           const proximityBonus = Math.max(0, 1 - nearestWrist / Math.max(width * 0.45, 1)) * 0.18;
-          const specializedBonus = object.source === "masterhoop-model" ? 0.12 : 0;
+          const specializedBonus = object.source === "BasketMotion-Ai-model" ? 0.12 : 0;
           return object.score + proximityBonus + specializedBonus;
         };
         return rank(b) - rank(a);
       });
 
-    let bestBall = null;
-    let ballDetected = false;
-
-    if (ballDetections.length > 0) {
-      if (this.lastBallPos) {
-        // Find detection closest to predicted position
-        const dt = (now - this.lastBallTime) / 1000;
-        const predictedX = this.lastBallPos.x + this.ballVelocity.vx * dt;
-        const predictedY = this.lastBallPos.y + this.ballVelocity.vy * dt + 0.5 * this.gravity * dt * dt;
-
-        bestBall = ballDetections.reduce((best, current) => {
-          const currentX = current.bbox[0] + current.bbox[2] / 2;
-          const currentY = current.bbox[1] + current.bbox[3] / 2;
-          const distToPredicted = Math.sqrt(Math.pow(currentX - predictedX, 2) + Math.pow(currentY - predictedY, 2));
-          
-          if (!best) return { ...current, dist: distToPredicted };
-          return distToPredicted < (best as any).dist ? { ...current, dist: distToPredicted } : best;
-        }, null as any);
-
-        // Consistency Check: Size shouldn't change too abruptly
-        if (this.lastBallSize && bestBall) {
-          const sizeRatio = (bestBall.bbox[2] * bestBall.bbox[3]) / (this.lastBallSize.w * this.lastBallSize.h);
-          if (sizeRatio < 0.4 || sizeRatio > 2.5) {
-            bestBall = null; // Reject suspicious size jump
-          }
-        }
-        
-        // Consistency Check: Max speed sanity (ball shouldn't travel 2000px/s unless we are in a massive frame jump)
-        if (bestBall && (bestBall as any).dist > width * 0.5 && dt < 0.2) {
-          bestBall = null; // Likely false positive
-        }
-      } else {
-        bestBall = ballDetections[0];
-      }
-    }
-
-    let ballPos = null;
-    if (bestBall) {
-      const currentRawPos = { 
-        x: bestBall.bbox[0] + bestBall.bbox[2] / 2, 
-        y: bestBall.bbox[1] + bestBall.bbox[3] / 2 
-      };
-
-      if (this.lastBallPos && this.lastBallTime > 0) {
-        const dt = Math.min((now - this.lastBallTime) / 1000, 0.1); 
-        if (dt > 0) {
-          const instantVx = (currentRawPos.x - this.lastBallPos.x) / dt;
-          const instantVy = (currentRawPos.y - this.lastBallPos.y) / dt;
-          
-          // Adaptive Smoothing: Higher alpha when moving fast to reduce lag, lower when slow to reduce jitter
-          const speedFactor = Math.min(Math.sqrt(instantVx * instantVx + instantVy * instantVy) / 1000, 1);
-          const adaptiveAlpha = 0.3 + (speedFactor * 0.4);
-          const adaptiveVelAlpha = 0.2 + (speedFactor * 0.3);
-
-          this.ballVelocity = {
-            vx: adaptiveVelAlpha * instantVx + (1 - adaptiveVelAlpha) * this.ballVelocity.vx,
-            vy: adaptiveVelAlpha * instantVy + (1 - adaptiveVelAlpha) * this.ballVelocity.vy
-          };
-
-          ballPos = {
-            x: adaptiveAlpha * currentRawPos.x + (1 - adaptiveAlpha) * (this.lastBallPos.x + this.ballVelocity.vx * dt),
-            y: adaptiveAlpha * currentRawPos.y + (1 - adaptiveAlpha) * (this.lastBallPos.y + this.ballVelocity.vy * dt)
-          };
-        }
-      } else {
-        ballPos = currentRawPos;
-        this.ballVelocity = { vx: 0, vy: 0 };
-      }
-      this.lastBallPos = ballPos;
-      this.lastBallSize = { w: bestBall.bbox[2], h: bestBall.bbox[3] };
-      this.lastBallTime = now;
-      this.ballDetectionCount++;
-      ballDetected = true;
-    } else if (this.lastBallPos && (now - this.lastBallTime < this.persistenceTime)) {
-      // Prediction mode
-      const dt = (now - this.lastBallTime) / 1000;
-      this.ballVelocity.vy += this.gravity * dt;
-      this.ballVelocity.vx *= this.friction;
-      this.ballVelocity.vy *= this.friction;
-
-      ballPos = {
-        x: this.lastBallPos.x + this.ballVelocity.vx * dt,
-        y: this.lastBallPos.y + this.ballVelocity.vy * dt
-      };
-
-      this.lastBallPos = ballPos;
-      this.lastBallTime = now;
-      ballDetected = true;
-    } else {
-      this.lastBallPos = null;
-      this.lastBallSize = null;
-      this.ballVelocity = { vx: 0, vy: 0 };
-      this.ballDetectionCount = 0;
-    }
+    const trackerCandidates: BallDetection[] = ballDetections.map((object) => ({
+      frameIndex,
+      timestampMs: now,
+      bbox: { x: object.bbox[0], y: object.bbox[1], width: object.bbox[2], height: object.bbox[3] },
+      center: { x: object.bbox[0] + object.bbox[2] / 2, y: object.bbox[1] + object.bbox[3] / 2 },
+      confidence: object.score,
+      detector: object.source === "BasketMotion-Ai-model" ? "BasketMotion-Ai" : "coco_ssd",
+    }));
+    const ballTrack = this.temporalBallTracker.update(trackerCandidates, now);
+    const trackedBall = ballTrack.detections.at(-1);
+    const ballDetected = trackedBall?.observed === true;
+    const ballPos = trackedBall?.center || null;
+    this.ballVelocity = trackedBall
+      ? { vx: trackedBall.velocity.x, vy: trackedBall.velocity.y }
+      : { vx: 0, vy: 0 };
+    this.lastBallPos = ballPos;
+    this.lastBallTime = trackedBall?.timestampMs || 0;
+    this.ballDetectionCount = ballTrack.detections.filter((point) => point.observed).length;
 
     // Check if person has ball (wrist close to ball)
     let hasBall = false;
-    if (ballPos && wrist && wrist.score! > 0.5) {
-      const dist = Math.sqrt(Math.pow(ballPos.x - wrist.x, 2) + Math.pow(ballPos.y - wrist.y, 2));
-      // Buffer dist based on movement
-      const threshold = 120; 
-      if (dist < threshold) hasBall = true;
+    if (ballPos) {
+      const visibleWrists = [wrist, leftWristForBall]
+        .filter((point): point is NonNullable<typeof point> => Boolean(point && (point.score ?? 0) > 0.5));
+      const threshold = Math.max(trackedBall?.bbox.width ? trackedBall.bbox.width * 2.2 : 0, width * 0.12);
+      hasBall = visibleWrists.some((point) => Math.hypot(ballPos.x - point.x, ballPos.y - point.y) < threshold);
     }
 
     // Improved Shot detection: Wrist goes above head while elbow extends
@@ -291,109 +261,38 @@ export class PoseAnalyzer {
         isShooting = true;
         if (!this.isProcessingShot) {
           this.isProcessingShot = true;
-          this.shotStartTime = Date.now();
+          this.shotStartTime = now;
         }
       }
     }
 
-    // Shot outcome simulation (Physics-based: track ball path vs logical hoop)
-    const hoopX = width * this.hoopPos.x;
-    const hoopY = height * this.hoopPos.y;
-    const hoopTolerance = width * 0.08; // Successful radius
-
+    // The hoop overlay is a user-adjustable normalized reference, not a detected
+    // basket. It must never be used to infer made/missed without visual evidence.
     if (this.isProcessingShot) {
-      const timeInShot = Date.now() - this.shotStartTime;
+      const timeInShot = now - this.shotStartTime;
       
       // If we detect a clear release (ball moving up away from hands)
       const isReleased = !hasBall && ballDetected && this.ballVelocity.vy < -100;
       
-      if (isReleased || timeInShot > 2000) {
-        // Project trajectory to find point nearest to hoop
-        let predictedX = ballPos?.x || hoopX;
-        let predictedY = ballPos?.y || hoopY;
-        let v_x = this.ballVelocity.vx;
-        let v_y = this.ballVelocity.vy;
-        const g = this.gravity;
-        const simDt = 0.05;
-        let hitHoop = false;
-
-        // Run mini simulation for 2 seconds (40 steps)
-        for (let i = 0; i < 40; i++) {
-          predictedX += v_x * simDt;
-          predictedY += v_y * simDt + 0.5 * g * simDt * simDt;
-          v_y += g * simDt;
-          
-          const distToHoop = Math.sqrt(Math.pow(predictedX - hoopX, 2) + Math.pow(predictedY - hoopY, 2));
-          if (distToHoop < hoopTolerance) {
-            hitHoop = true;
-            break;
-          }
-          if (predictedY > height) break;
-        }
-
-        const distToHoopStart = Math.sqrt(Math.pow((ballPos?.x || hoopX) - hoopX, 2) + Math.pow((ballPos?.y || hoopY) - hoopY, 2));
-        let shotType = 'Jump Shot';
-        if (distToHoopStart < width * this.courtLines.keyWidth) shotType = 'Layup';
-        else if (distToHoopStart > width * this.courtLines.threePtRadius) shotType = 'Three Pointer';
-        
-        const outcome = hitHoop ? 'made' : 'missed';
-        
-        // Auto-refine hoop position if we hit it with high confidence
-        if (hitHoop && ballDetected) {
-           this.hoopPos.x = (this.hoopPos.x + (bestBall.bbox[0] + bestBall.bbox[2]/2) / width) / 2;
-           this.hoopPos.y = (this.hoopPos.y + (bestBall.bbox[1] + bestBall.bbox[3]/2) / height) / 2;
-        }
-
+      if (isReleased) {
         this.shots.push({
-          x: Math.round(((ballPos?.x || 0) / width) * 100),
-          y: Math.round(((ballPos?.y || 0) / height) * 100),
-          z: 10,
-          shotType,
-          outcome
+          x: ballPos ? Math.round((ballPos.x / width) * 100) : undefined,
+          y: ballPos ? Math.round((ballPos.y / height) * 100) : undefined,
+          shotType: "unknown",
+          outcome: "unknown",
+          confidence: trackedBall?.confidence || 0,
+          source: "release-event-without-hoop-detection",
         });
-
-        if (hitHoop) {
-          this.madeShots++;
-        } else {
-          this.missedShots++;
-        }
+        this.isProcessingShot = false;
+      } else if (timeInShot > 2000) {
         this.isProcessingShot = false;
       }
     }
 
-    // Court Status based on player feet
-    let in3PtRange = false;
-    let inPaint = false;
-    let isOutOfBounds = false;
-
-    if (ankle) {
-      const distToHoop = Math.sqrt(Math.pow(ankle.x - hoopX, 2) + Math.pow(ankle.y - hoopY, 2));
-      const normalizedAnkleX = ankle.x / width;
-      const normalizedAnkleY = ankle.y / height;
-
-      if (this.perspective === 'front') {
-        in3PtRange = distToHoop > width * this.courtLines.threePtRadius;
-        inPaint = Math.abs(normalizedAnkleX - this.hoopPos.x) < this.courtLines.keyWidth / 2 && 
-                  normalizedAnkleY > this.hoopPos.y && 
-                  normalizedAnkleY < this.courtLines.freeThrowLineY;
-      } else if (this.perspective === 'side-left') {
-        in3PtRange = distToHoop > width * this.courtLines.threePtRadius;
-        inPaint = normalizedAnkleX < this.courtLines.keyWidth && 
-                  Math.abs(normalizedAnkleY - this.hoopPos.y) < 0.15;
-      } else if (this.perspective === 'side-right') {
-        in3PtRange = distToHoop > width * this.courtLines.threePtRadius;
-        inPaint = normalizedAnkleX > (1 - this.courtLines.keyWidth) && 
-                  Math.abs(normalizedAnkleY - this.hoopPos.y) < 0.15;
-      }
-
-      const oobXPadding = this.courtLines.sidelinePadding;
-      const oobYPadding = this.courtLines.baselineY;
-      
-      isOutOfBounds = normalizedAnkleX < oobXPadding || 
-                      normalizedAnkleX > (1 - oobXPadding) || 
-                      normalizedAnkleY < oobYPadding || 
-                      normalizedAnkleY > this.courtLines.outOfBounds;
-    }
+    // Les zones terrain restent indisponibles jusqu’à une calibration valide (Sprint 4).
+    const in3PtRange = false;
+    const inPaint = false;
+    const isOutOfBounds = false;
 
     // Robust Dribble detection & Counting: Ball bounce detection
     let isDribbling = false;
@@ -535,15 +434,15 @@ export class PoseAnalyzer {
       this.wasPossessing = false;
     }
 
-    const currentMetrics = {
+    const currentMetrics: PoseMetrics = {
       elbowAngle: Math.round(elbowAngle),
       kneeAngle: Math.round(kneeAngle),
       shoulderLevel: shoulder ? Math.round(shoulder.y) : 0,
       isShooting,
       isDribbling,
       ballDetected,
-      ballConfidence: bestBall ? Math.round(bestBall.score * 100) : 0,
-      ballDetectorSource: this.objectModel?.getStatus().source || "coco-ssd",
+      ballConfidence: trackedBall ? Math.round(trackedBall.confidence * 100) : 0,
+      ballDetectorSource: trackedBall?.detector === "BasketMotion-Ai" ? "BasketMotion-Ai-model" : "coco-ssd",
       ballPos,
       ballVelocity: { ...this.ballVelocity },
       hasBall,
@@ -565,6 +464,27 @@ export class PoseAnalyzer {
         isOutOfBounds
       }
     };
+
+    const poseConfidence = pose.score ?? (
+      keypoints.length
+        ? keypoints.reduce((sum, point) => sum + (point.score ?? 0), 0) / keypoints.length
+        : 0
+    );
+    this.shotAnalysisEngine.addFrame({
+      frameIndex,
+      timestampMs,
+      width,
+      height,
+      confidence: Math.max(0, Math.min(1, poseConfidence)),
+      keypoints: keypoints.flatMap((point) => point.name ? [{
+        name: point.name,
+        x: point.x,
+        y: point.y,
+        confidence: Math.max(0, Math.min(1, point.score ?? 0)),
+      }] : []),
+      ball: trackedBall ? { ...trackedBall } : null,
+      hasBall,
+    });
 
     // Update history
     this.moveHistory.push({ metrics: currentMetrics, timestamp: now });

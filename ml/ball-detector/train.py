@@ -7,7 +7,7 @@ from ultralytics import YOLO
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Entraîne le détecteur de ballon MasterHoop.")
+    parser = argparse.ArgumentParser(description="Entraîne le détecteur de ballon BasketMotion-Ai.")
     parser.add_argument("--base-model", default="yolo11n.pt")
     parser.add_argument("--epochs", type=int, default=80)
     parser.add_argument("--image-size", type=int, default=640)

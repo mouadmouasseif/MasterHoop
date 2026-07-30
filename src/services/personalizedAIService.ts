@@ -1,5 +1,7 @@
 import type { PoseMetrics } from "@/src/lib/poseDetection";
 import type { VideoQualityReport } from "@/src/services/videoFrameAnalysisService";
+import type { MetricResult } from "@/src/ai/types";
+import type { ShotSequenceAnalysis } from "@/src/ai/types";
 
 export type ConfidenceLabel =
   | "very_reliable"
@@ -19,13 +21,16 @@ export type MetricConfidence = {
   confidence: number;
   label: ConfidenceLabel;
   measured: boolean;
+  source: string;
+  status: MetricResult["status"];
+  limitations?: string[];
 };
 
 export type AIAnalysisResult = {
   score: number;
   confidenceScore: number;
   confidenceLabel: ConfidenceLabel;
-  engine: "masterhoop-local-v1";
+  engine: "BasketMotion-Ai-local-v1";
   aiFeedback: string;
   strengths: string[];
   weaknesses: string[];
@@ -33,9 +38,11 @@ export type AIAnalysisResult = {
   recommendedDrills: { title: string; focus: string; level: string }[];
   metrics: AIAnalysisMetrics;
   metricConfidence: Record<keyof AIAnalysisMetrics, MetricConfidence>;
+  metricResults: Record<keyof AIAnalysisMetrics, MetricResult>;
   limitations: string[];
   videoQuality?: VideoQualityReport;
   observedMetrics?: Partial<PoseMetrics> | null;
+  shotAnalysis?: ShotSequenceAnalysis;
 };
 
 export interface BasketballAnalysisService {
@@ -55,10 +62,13 @@ const reliabilityLabel = (confidence: number): ConfidenceLabel => {
 const finiteMetric = (value: unknown): number | null =>
   typeof value === "number" && Number.isFinite(value) && value > 0 ? value : null;
 
-const confidence = (value: number, measured: boolean): MetricConfidence => ({
+const confidence = (value: number, measured: boolean, source: string): MetricConfidence => ({
   confidence: clamp(value),
   label: reliabilityLabel(clamp(value)),
   measured,
+  source,
+  status: measured && value >= 60 ? "estimated" : "unavailable",
+  limitations: measured ? ["Score technique dérivé de points 2D ; ce n’est pas une mesure biomécanique 3D."] : ["Signal requis non observé."],
 });
 
 class LocalBasketballAnalysisService implements BasketballAnalysisService {
@@ -76,7 +86,9 @@ class LocalBasketballAnalysisService implements BasketballAnalysisService {
     const analysisMetrics: AIAnalysisMetrics = {
       shootingForm:
         elbow !== null
-          ? clamp((accuracy ?? 70) * 0.45 + scoreAround(elbow, 88, 45) * 0.55)
+          ? accuracy !== null
+            ? clamp(accuracy * 0.45 + scoreAround(elbow, 88, 45) * 0.55)
+            : scoreAround(elbow, 88, 45)
           : 0,
       balance: knee !== null ? scoreAround(knee, 72, 50) : 0,
       releaseSpeed: rhythm !== null ? clamp(45 + Math.min(rhythm, 170) * 0.3) : 0,
@@ -88,12 +100,27 @@ class LocalBasketballAnalysisService implements BasketballAnalysisService {
       shootingForm: confidence(
         elbow !== null ? 70 + (hasShotSample ? Math.min(attempts, 10) * 2 : 0) : 0,
         elbow !== null,
+        hasShotSample ? "movenet_pose+shot_annotations" : "movenet_pose",
       ),
-      balance: confidence(knee !== null ? 78 : 0, knee !== null),
-      releaseSpeed: confidence(rhythm !== null ? 68 : 0, rhythm !== null),
-      stability: confidence(dribblePower !== null ? 66 : 0, dribblePower !== null),
-      jumpTiming: confidence(knee !== null && metrics?.isShooting ? 76 : knee !== null ? 62 : 0, knee !== null),
+      balance: confidence(knee !== null ? 78 : 0, knee !== null, "movenet_pose"),
+      releaseSpeed: confidence(rhythm !== null ? 68 : 0, rhythm !== null, "local_motion_timing"),
+      stability: confidence(dribblePower !== null ? 66 : 0, dribblePower !== null, "local_ball_motion"),
+      jumpTiming: confidence(knee !== null && metrics?.isShooting ? 76 : knee !== null ? 62 : 0, knee !== null, "movenet_pose"),
     };
+    const metricResults = Object.fromEntries(
+      (Object.keys(analysisMetrics) as (keyof AIAnalysisMetrics)[]).map((key) => {
+        const metadata = metricConfidence[key];
+        const reliable = metadata.measured && metadata.confidence >= 60;
+        return [key, {
+          value: reliable ? analysisMetrics[key] : null,
+          unit: "score/100",
+          confidence: metadata.confidence / 100,
+          source: metadata.source,
+          status: reliable ? metadata.status : "unavailable",
+          limitations: metadata.limitations,
+        } satisfies MetricResult];
+      }),
+    ) as Record<keyof AIAnalysisMetrics, MetricResult>;
 
     const measuredEntries = (Object.keys(analysisMetrics) as (keyof AIAnalysisMetrics)[])
       .filter((key) => metricConfidence[key].measured);
@@ -118,7 +145,7 @@ class LocalBasketballAnalysisService implements BasketballAnalysisService {
       score,
       confidenceScore,
       confidenceLabel: reliabilityLabel(confidenceScore),
-      engine: "masterhoop-local-v1",
+      engine: "BasketMotion-Ai-local-v1",
       aiFeedback: feedbackFor(score, confidenceScore),
       strengths,
       weaknesses,
@@ -126,6 +153,7 @@ class LocalBasketballAnalysisService implements BasketballAnalysisService {
       recommendedDrills: reliable ? buildDrills(weaknesses) : [],
       metrics: analysisMetrics,
       metricConfidence,
+      metricResults,
       limitations: buildLimitations({ elbow, knee, rhythm, dribblePower, attempts }),
     };
   }

@@ -33,13 +33,13 @@ export function exportSessionsCsv({ sessions }: ExportBundle) {
   downloadBlob("master-hoop-sessions.csv", new Blob([csv], { type: "text/csv;charset=utf-8" }));
 }
 
-export function exportProfessionalPdf({ player = "MasterHoop Player", sessions, recommendations = [] }: ExportBundle) {
+export function exportProfessionalPdf({ player = "BasketMotion-Ai Player", sessions, recommendations = [] }: ExportBundle) {
   const latest = sessions[0];
   const html = `<!doctype html>
   <html>
     <head>
       <meta charset="utf-8" />
-      <title>MasterHoop Report</title>
+      <title>BasketMotion-Ai Report</title>
       <style>
         body { font-family: Inter, Arial, sans-serif; background: #0A0A0B; color: white; padding: 32px; }
         h1 { color: #FF6B00; letter-spacing: .08em; }
@@ -51,13 +51,13 @@ export function exportProfessionalPdf({ player = "MasterHoop Player", sessions, 
       </style>
     </head>
     <body>
-      <h1>MASTERHOOP AI REPORT</h1>
+      <h1>BasketMotion-Ai AI REPORT</h1>
       <p>Joueur: <strong>${player}</strong></p>
       <div class="grid">
         <div class="card"><div>Sessions</div><div class="score">${sessions.length}</div></div>
         <div class="card"><div>Score IA</div><div class="score">${latest?.score ?? 0}</div></div>
-        <div class="card"><div>Vitesse</div><div class="score">${latest?.advancedAnalysis?.report.speed ?? 0}</div></div>
-        <div class="card"><div>Distance</div><div class="score">${latest?.advancedAnalysis?.report.distance ?? 0}</div></div>
+        <div class="card"><div>Vitesse</div><div class="score">${latest?.advancedAnalysis?.report.speed ?? "Indisponible"}</div></div>
+        <div class="card"><div>Distance</div><div class="score">${latest?.advancedAnalysis?.report.distance ?? "Indisponible"}</div></div>
       </div>
       <h2>Recommandations IA</h2>
       <ul>${recommendations.map((item) => `<li>${item}</li>`).join("")}</ul>

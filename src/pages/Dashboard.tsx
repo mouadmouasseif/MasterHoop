@@ -16,14 +16,14 @@ export default function Dashboard(props: any) {
     const missedFromAnalyses = analyses.reduce((acc, analysis) => acc + analysis.missedShots, 0);
     const made = madeFromSessions + madeFromAnalyses;
     const missed = missedFromSessions + missedFromAnalyses;
-    const total = made + missed || 1;
-    const avgScore = analyses.length ? Math.round(analyses.reduce((acc, analysis) => acc + analysis.score, 0) / analyses.length) : Math.round((made / total) * 100);
+    const total = made + missed;
+    const avgScore = analyses.length ? Math.round(analyses.reduce((acc, analysis) => acc + analysis.score, 0) / analyses.length) : null;
     return { made, missed, total, avgScore };
   }, [sessions, analyses]);
 
   const chartData = analyses.length
     ? [...analyses].reverse().slice(-10).map((analysis, index) => ({ session: `A${index + 1}`, accuracy: analysis.score }))
-    : [{ session: 'A1', accuracy: 72 }, { session: 'A2', accuracy: 80 }, { session: 'A3', accuracy: 76 }];
+    : [];
 
   return (
     <motion.div key="stats" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-8">
@@ -44,7 +44,7 @@ export default function Dashboard(props: any) {
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
         <StatCard icon={<Target />} value={`${stats.made}`} label="Paniers reussis" color="text-brand-neon" />
         <StatCard icon={<Activity />} value={`${stats.missed}`} label="Paniers manques" color="text-red-400" />
-        <StatCard icon={<Award />} value={`${stats.avgScore}%`} label="Score IA moyen" color="text-brand-orange" />
+        <StatCard icon={<Award />} value={stats.avgScore === null ? "—" : `${stats.avgScore}%`} label="Score mesuré moyen" color="text-brand-orange" />
         <StatCard icon={<Video />} value={`${analyses.length}`} label="Rapports IA" />
       </div>
 
@@ -52,6 +52,9 @@ export default function Dashboard(props: any) {
         <div className="glass-card p-6">
           <h3 className="mb-6 flex items-center gap-2 text-xl font-black"><LineIcon className="text-brand-orange" /> Progression score IA</h3>
           <div className="h-[320px]">
+            {chartData.length === 0 ? (
+              <div className="flex h-full items-center justify-center text-sm text-white/40">Aucune mesure fiable à tracer.</div>
+            ) : (
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={chartData}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#ffffff10" />
@@ -61,6 +64,7 @@ export default function Dashboard(props: any) {
                 <Line type="monotone" dataKey="accuracy" stroke="#FF6B00" strokeWidth={3} dot={{ r: 4, fill: '#FF6B00' }} />
               </LineChart>
             </ResponsiveContainer>
+            )}
           </div>
         </div>
 

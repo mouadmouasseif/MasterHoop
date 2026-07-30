@@ -121,7 +121,7 @@ export default function DrillsPage({ onStartDrill }: { onStartDrill: (drill: Dri
       <div className="rounded-3xl border border-brand-orange/20 bg-brand-orange/10 p-6">
         <div className="mb-2 flex items-center gap-2 text-sm font-black uppercase text-brand-orange"><Upload size={17} /> Upload training video</div>
         <p className="text-sm text-white/60">
-          Tu peux aussi uploader une video d entrainement deja enregistree. Master Hoop genere un rapport, les bons moves, les erreurs de position, le shoot form score et ajoute le resultat dans Stats, Historique et Coach AI.
+          Tu peux aussi uploader une video d entrainement deja enregistree. Basket Motion genere un rapport, les bons moves, les erreurs de position, le shoot form score et ajoute le resultat dans Stats, Historique et Coach AI.
         </p>
       </div>
     </motion.div>

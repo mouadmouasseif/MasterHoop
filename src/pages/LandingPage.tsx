@@ -1,6 +1,6 @@
 import { Activity, ArrowRight, Brain, Camera, CheckCircle2, Dumbbell, LineChart, Lock, Play, Shield, Sparkles, Target, UserRound } from 'lucide-react';
 import Footer from '@/src/components/layout/Footer';
-import masterHoopLogo from '@/src/assets/master-hoop-logo.png';
+import BasketMotion-AiLogo from '@/src/assets/basketmotion-logo.png';
 
 const architecture = [
   { title: 'AUTH', icon: Lock, items: ['Login Google', 'First setup profile', 'Save user data'] },
@@ -11,10 +11,18 @@ const architecture = [
 const aiMetrics = ['Angle du coude', 'Hauteur du saut', 'Position jambes', 'Stabilite', 'Vitesse crossover', 'Equilibre', 'Release timing'];
 
 const drills = [
-  { title: 'Shot Mechanics', difficulty: 'Beginner', target: 'Jumpshot', score: '82%' },
-  { title: 'Crossover Speed', difficulty: 'Intermediate', target: 'Dribbling', score: '76%' },
-  { title: 'Release Timing', difficulty: 'Pro', target: 'Shooting', score: '88%' },
+  { title: 'Shot Mechanics', difficulty: 'Beginner', target: 'Jumpshot', score: '82%', isDemoData: true },
+  { title: 'Crossover Speed', difficulty: 'Intermediate', target: 'Dribbling', score: '76%', isDemoData: true },
+  { title: 'Release Timing', difficulty: 'Pro', target: 'Shooting', score: '88%', isDemoData: true },
 ];
+
+const illustrativeMetrics = [
+  { label: 'Shot Form', value: '82%', isDemoData: true },
+  { label: 'Balance', value: '91%', isDemoData: true },
+  { label: 'Release', value: '0.85s', isDemoData: true },
+];
+
+const illustrativeResult = { score: 82, isDemoData: true };
 
 export default function LandingPage({
   onStart,
@@ -32,9 +40,9 @@ export default function LandingPage({
       <header className="sticky top-0 z-40 border-b border-white/10 bg-brand-dark/80 backdrop-blur-xl">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3 md:px-8">
           <div className="flex items-center gap-3">
-            <img src={masterHoopLogo} alt="Master Hoop logo" className="h-12 w-12 rounded-xl object-cover ring-1 ring-white/10" />
+            <img src={BasketMotion-AiLogo} alt="Basket Motion logo" className="h-12 w-12 rounded-xl object-cover ring-1 ring-white/10" />
             <div>
-              <div className="text-sm font-black uppercase tracking-widest">Master Hoop</div>
+              <div className="text-sm font-black uppercase tracking-widest">Basket Motion</div>
               <div className="text-[10px] uppercase tracking-[0.24em] text-brand-orange">AI Basketball Training</div>
             </div>
           </div>
@@ -64,7 +72,7 @@ export default function LandingPage({
               <Sparkles size={13} /> Startup AI sport platform
             </div>
             <div className="space-y-5">
-              <h1 className="max-w-4xl text-5xl font-black uppercase leading-none tracking-normal md:text-7xl">Master Hoop transforme ton entrainement basket en analyse IA.</h1>
+              <h1 className="max-w-4xl text-5xl font-black uppercase leading-none tracking-normal md:text-7xl">Basket Motion transforme ton entrainement basket en analyse IA.</h1>
               <p className="max-w-2xl text-base leading-7 text-white/60 md:text-lg">La plateforme combine onboarding joueur, drills guides, camera live, pose detection et feedback IA pour mesurer la forme de tir, le dribble, l'equilibre et la progression.</p>
             </div>
             <div className="flex flex-col gap-3 sm:flex-row">
@@ -91,13 +99,12 @@ export default function LandingPage({
           </div>
 
           <div className="relative min-h-[420px] overflow-hidden rounded-3xl border border-white/10 bg-black/40 p-6 shadow-2xl">
-            <img src={masterHoopLogo} alt="Master Hoop basketball AI logo" className="absolute inset-0 h-full w-full object-cover opacity-35" />
+            <img src={BasketMotion-AiLogo} alt="Basket Motion basketball AI logo" className="absolute inset-0 h-full w-full object-cover opacity-35" />
             <div className="absolute inset-0 bg-gradient-to-t from-brand-dark via-brand-dark/65 to-transparent" />
             <div className="relative z-10 flex h-full flex-col justify-end gap-5 pt-56">
+              <div className="mb-1 text-[10px] font-black uppercase tracking-[0.2em] text-white/45">Aperçu illustratif · données de démonstration</div>
               <div className="grid grid-cols-3 gap-3">
-                <Metric label="Shot Form" value="82%" />
-                <Metric label="Balance" value="91%" />
-                <Metric label="Release" value="0.85s" />
+                {illustrativeMetrics.map((metric) => <div key={metric.label}><Metric label={metric.label} value={metric.value} /></div>)}
               </div>
               <div className="rounded-2xl border border-brand-orange/30 bg-brand-surface/80 p-5 backdrop-blur-xl">
                 <div className="mb-2 flex items-center gap-2 text-xs font-black uppercase tracking-widest text-brand-orange"><Brain size={16} /> AI Analysis</div>
@@ -145,7 +152,7 @@ export default function LandingPage({
           <div className="grid gap-4 md:grid-cols-3">
             {drills.map((drill) => (
               <div key={drill.title} className="rounded-2xl border border-white/10 bg-brand-surface/60 p-6">
-                <div className="mb-5 flex items-center justify-between"><span className="rounded-full bg-white/5 px-3 py-1 text-[10px] font-black uppercase text-white/50">{drill.difficulty}</span><span className="text-xl font-black text-brand-neon">{drill.score}</span></div>
+                <div className="mb-5 flex items-center justify-between"><span className="rounded-full bg-white/5 px-3 py-1 text-[10px] font-black uppercase text-white/50">{drill.difficulty} · démo</span><span className="text-xl font-black text-brand-neon">{drill.score}</span></div>
                 <h3 className="mb-2 text-xl font-black">{drill.title}</h3>
                 <p className="mb-5 text-sm text-white/50">Objectif: {drill.target}. Tutoriel video, analyse camera et feedback IA apres mouvement.</p>
                 <button onClick={onStart} className="flex items-center gap-2 text-sm font-bold text-brand-orange">Start AI Analysis <Play size={15} /></button>
@@ -162,8 +169,8 @@ export default function LandingPage({
               <div className="grid grid-cols-2 gap-3">{aiMetrics.map((metric) => <div key={metric} className="rounded-xl bg-white/5 p-3 text-sm text-white/65">{metric}</div>)}</div>
             </div>
             <div className="rounded-3xl border border-brand-orange/25 bg-brand-orange/10 p-8">
-              <div className="mb-4 flex items-center gap-3 text-brand-orange"><LineChart size={24} /><span className="text-xs font-black uppercase tracking-widest">Resultat</span></div>
-              <h2 className="mb-5 text-3xl font-black uppercase">AI Analysis: Score 82%</h2>
+              <div className="mb-4 flex items-center gap-3 text-brand-orange"><LineChart size={24} /><span className="text-xs font-black uppercase tracking-widest">Résultat illustratif · données de démonstration</span></div>
+              <h2 className="mb-5 text-3xl font-black uppercase">Exemple d’analyse : score {illustrativeResult.score}%</h2>
               <div className="space-y-3 text-sm text-white/70">
                 <p><span className="font-black text-brand-neon">Points forts:</span> bonne stabilite, coude aligne, follow-through propre.</p>
                 <p><span className="font-black text-red-300">A ameliorer:</span> release trop lente, jambes rigides, arc insuffisant.</p>

@@ -12,6 +12,7 @@ export function detectBallFromMetrics(input: {
   ballDetected?: boolean;
   ballPos?: Point2D | null;
   ballVelocity?: Point2D;
+  ballConfidence?: number;
   previousTrail?: Point2D[];
 }): BallDetection {
   const trail = [...(input.previousTrail || [])];
@@ -21,7 +22,9 @@ export function detectBallFromMetrics(input: {
 
   return {
     detected: Boolean(input.ballDetected && input.ballPos),
-    confidence: input.ballDetected && input.ballPos ? 0.82 : trail.length ? 0.38 : 0,
+    confidence: input.ballDetected && input.ballPos
+      ? Math.max(0, Math.min(1, Number(input.ballConfidence || 0) > 1 ? Number(input.ballConfidence) / 100 : Number(input.ballConfidence || 0)))
+      : 0,
     position: input.ballPos || undefined,
     velocity: input.ballVelocity,
     trail: trail.slice(-18),

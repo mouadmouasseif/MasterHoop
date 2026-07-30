@@ -1,0 +1,32 @@
+{
+  "schemaVersion": 1,
+  "license": "CC0-1.0",
+  "provenance": "Generated in-repository by tests/fixtures/generate-video-fixtures.mjs",
+  "containsRealPeople": false,
+  "containsPersonalData": false,
+  "resolution": { "width": 320, "height": 180 },
+  "frameRate": 10,
+  "durationSeconds": 2,
+  "fixtures": [
+    {
+      "file": "shot-complete-synthetic.webm",
+      "condition": "synthetic_complete_arc",
+      "expected": { "ballVisible": true, "quality": "synthetic_only" }
+    },
+    {
+      "file": "ball-absent-synthetic.webm",
+      "condition": "ball_absent",
+      "expected": { "ballVisible": false, "quality": "synthetic_only" }
+    },
+    {
+      "file": "low-light-synthetic.webm",
+      "condition": "low_light",
+      "expected": { "qualityIssue": "low_light", "quality": "synthetic_only" }
+    },
+    {
+      "file": "tracking-loss-synthetic.webm",
+      "condition": "temporary_ball_loss",
+      "expected": { "ballVisible": true, "temporaryLoss": true, "quality": "synthetic_only" }
+    }
+  ]
+}

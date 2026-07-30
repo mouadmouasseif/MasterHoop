@@ -2,7 +2,7 @@ import { motion } from 'motion/react';
 import { Settings } from 'lucide-react';
 import type { User as FirebaseUser } from 'firebase/auth';
 import type { UserProfile } from '@/src/types';
-import masterHoopLogo from '@/src/assets/master-hoop-logo.png';
+import BasketMotion-AiLogo from '@/src/assets/basketmotion-logo.png';
 
 const positions = [
   { id: 1, abbr: 'PG', name: 'Meneur' },
@@ -43,9 +43,9 @@ export default function CompleteProfile({
         </div>
         <div className="relative z-10">
           <div className="mb-6 flex items-center gap-4">
-            <img src={masterHoopLogo} alt="Master Hoop logo" className="h-16 w-16 rounded-2xl object-cover ring-1 ring-white/10" />
+            <img src={BasketMotion-AiLogo} alt="Basket Motion logo" className="h-16 w-16 rounded-2xl object-cover ring-1 ring-white/10" />
             <div>
-              <h2 className="text-2xl font-black uppercase tracking-wide">Bienvenue sur Master Hoop</h2>
+              <h2 className="text-2xl font-black uppercase tracking-wide">Bienvenue sur Basket Motion</h2>
               <p className="text-sm text-white/40">Complete ton profil pour calibrer l'analyse IA.</p>
             </div>
           </div>
@@ -68,9 +68,9 @@ export default function CompleteProfile({
           >
             <ProfileInput label="Nom complet" name="name" defaultValue={profile?.name || user?.displayName || ''} placeholder="Mouad Mouasseif" />
             <div className="grid grid-cols-3 gap-4">
-              <ProfileInput label="Age" name="age" type="number" defaultValue={profile?.age || 20} />
-              <ProfileInput label="Taille cm" name="height" type="number" defaultValue={profile?.height || 185} />
-              <ProfileInput label="Poids kg" name="weight" type="number" defaultValue={profile?.weight || 80} />
+              <ProfileInput label="Age" name="age" type="number" defaultValue={profile?.age || ''} />
+              <ProfileInput label="Taille cm" name="height" type="number" defaultValue={profile?.height || ''} />
+              <ProfileInput label="Poids kg" name="weight" type="number" defaultValue={profile?.weight || ''} />
             </div>
 
             <div className="space-y-2">

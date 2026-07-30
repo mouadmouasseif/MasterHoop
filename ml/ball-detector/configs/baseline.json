@@ -1,0 +1,8 @@
+{
+  "minimumPrecisionVsCoco": 0.0,
+  "minimumRecallVsCoco": 0.0,
+  "minimumF1Improvement": 0.1,
+  "minimumMap50": 0.5,
+  "maximumInferenceMs": 80,
+  "maximumModelSizeBytes": 15728640
+}

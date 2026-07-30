@@ -1,47 +1,59 @@
 rules_version = '2';
 service firebase.storage {
   match /b/{bucket}/o {
-    function signedIn() {
-      return request.auth != null;
+    function signedIn() { return request.auth != null; }
+    function activeAccount() { return signedIn() && request.auth.token.get('accountStatus', 'active') == 'active'; }
+    function claimRole() { return request.auth.token.get('role', 'athlete'); }
+    function claimClubId() { return request.auth.token.get('clubId', ''); }
+    function isOwner(userId) { return activeAccount() && request.auth.uid == userId; }
+    function isSuperAdmin() { return activeAccount() && claimRole() == 'super_admin'; }
+    function isClubAdmin(clubId) { return activeAccount() && claimRole() == 'club_admin' && claimClubId() == clubId; }
+    function coachLinkId(athleteId) { return request.auth.uid + '_' + athleteId; }
+    function isAssignedCoach(athleteId) {
+      return activeAccount() && claimRole() == 'coach'
+        && firestore.exists(/databases/(default)/documents/coachAthleteLinks/$(coachLinkId(athleteId)))
+        && firestore.get(/databases/(default)/documents/coachAthleteLinks/$(coachLinkId(athleteId))).data.status == 'active';
     }
-
-    function isOwner(userId) {
-      return signedIn() && request.auth.uid == userId;
+    function isAllowedContentType() {
+      return request.resource.contentType.matches('video/(mp4|quicktime|webm)')
+        || request.resource.contentType.matches('image/(jpeg|png|webp)')
+        || request.resource.contentType == 'application/json'
+        || request.resource.contentType == 'application/pdf'
+        || request.resource.contentType == 'text/csv';
     }
-
-    function isSafeUpload(maxMb) {
-      return request.resource.size < maxMb * 1024 * 1024
-        && (
-          request.resource.contentType.matches('video/.*')
-          || request.resource.contentType.matches('image/.*')
-          || request.resource.contentType == 'application/json'
-          || request.resource.contentType == 'text/csv'
-        );
+    function safeUpload(maxMb) { return request.resource.size > 0 && request.resource.size < maxMb * 1024 * 1024 && isAllowedContentType(); }
+    function canReadAthleteFile(athleteId) {
+      return isOwner(athleteId) || isAssignedCoach(athleteId) || isSuperAdmin() || isClubAdmin(resource.metadata.clubId);
     }
 
     match /users/{userId}/sessions/{sessionId}/{allPaths=**} {
-      allow read, delete: if isOwner(userId);
-      allow write: if isOwner(userId) && isSafeUpload(220);
+      allow read: if canReadAthleteFile(userId);
+      allow create: if isOwner(userId) && safeUpload(220) && request.resource.metadata.ownerId == userId;
+      allow update: if false;
+      allow delete: if isOwner(userId) || isSuperAdmin();
+    }
+
+    match /analyses/{athleteId}/{analysisId}/{allPaths=**} {
+      allow read: if canReadAthleteFile(athleteId);
+      allow create: if isOwner(athleteId) && safeUpload(220) && request.resource.metadata.ownerId == athleteId;
+      allow update: if false;
+      allow delete: if isOwner(athleteId) || isSuperAdmin();
     }
 
     match /matches/{matchId}/{allPaths=**} {
-      allow read: if signedIn() && (
-        resource.metadata.ownerUid == request.auth.uid
-        || resource.metadata.participantUids.matches('(^|.*,)' + request.auth.uid + '(,.*|$)')
-      );
-      allow write: if signedIn()
-        && request.resource.metadata.ownerUid == request.auth.uid
-        && isSafeUpload(320);
-      allow delete: if signedIn() && resource.metadata.ownerUid == request.auth.uid;
+      allow read: if activeAccount() && (resource.metadata.ownerUid == request.auth.uid || resource.metadata.participantUids.matches('(^|.*,)' + request.auth.uid + '(,.*|$)'));
+      allow create: if activeAccount() && request.resource.metadata.ownerUid == request.auth.uid && safeUpload(320);
+      allow update: if false;
+      allow delete: if activeAccount() && resource.metadata.ownerUid == request.auth.uid;
     }
 
     match /highlights/{userId}/{allPaths=**} {
-      allow read, delete: if isOwner(userId);
-      allow write: if isOwner(userId) && isSafeUpload(220);
+      allow read: if isOwner(userId) || isAssignedCoach(userId);
+      allow create: if isOwner(userId) && safeUpload(220) && request.resource.metadata.ownerId == userId;
+      allow update: if false;
+      allow delete: if isOwner(userId);
     }
 
-    match /{allPaths=**} {
-      allow read, write: if false;
-    }
+    match /{allPaths=**} { allow read, write: if false; }
   }
 }

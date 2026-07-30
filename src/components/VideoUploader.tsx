@@ -93,6 +93,7 @@ export default function VideoUploader({
         duration: Math.round(result.videoQuality.duration),
         drillName: "Uploaded Video",
         metrics: result.observedMetrics,
+        shotAnalysis: result.shotAnalysis,
         onProgress: setProgress,
       });
       onSaved?.();

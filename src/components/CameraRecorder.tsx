@@ -3,7 +3,8 @@ import { Play, Pause, Square, Activity, Target, Settings as SettingsIcon, Video,
 import { motion, AnimatePresence } from 'motion/react';
 import { ScatterChart, Scatter, XAxis, YAxis, ZAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 import { cn } from '@/src/lib/utils';
-import { PoseAnalyzer, PoseMetrics } from '@/src/lib/poseDetection';
+import { PoseAnalyzer, type PoseMetrics } from '@/src/lib/poseDetection';
+import type { ShotSequenceAnalysis } from '@/src/ai/types';
 import { Drill } from '@/src/components/DrillTutorials';
 import CameraSelector from '@/src/components/CameraSelector';
 import FullscreenButton from '@/src/components/FullscreenButton';
@@ -17,7 +18,7 @@ import { renderCourtOverlay } from '@/src/services/courtOverlayRenderer';
 interface CameraRecorderProps {
   isRecording: boolean;
   onRecordingChange: (recording: boolean) => void;
-  onRecordingComplete: (blob: Blob) => void;
+  onRecordingComplete: (blob: Blob, shotAnalysis?: ShotSequenceAnalysis) => void;
   onMetricsUpdate?: (metrics: PoseMetrics) => void;
   selectedMoves?: string[];
   currentDrill?: Drill | null;
@@ -51,6 +52,7 @@ export function CameraRecorder({
   const [dismissLandscapeHint, setDismissLandscapeHint] = useState(false);
   
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const analysisStartTimeRef = useRef<number | null>(null);
   const chunksRef = useRef<Blob[]>([]);
   const [stream, setStream] = useState<MediaStream | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -327,7 +329,7 @@ export function CameraRecorder({
 
     ctx.fillStyle = 'rgba(0, 255, 148, 0.85)';
     ctx.font = 'bold 9px Mono';
-    ctx.fillText('2PT / 3PT', startX + mapW / 2, startY + mapH + 15);
+    ctx.fillText('REPÈRE NON CALIBRÉ', startX + mapW / 2, startY + mapH + 15);
   };
 
   const [isScanning, setIsScanning] = useState(false);
@@ -356,8 +358,6 @@ export function CameraRecorder({
 
     const hoopX = w * (analyzerRef.current?.hoopPos.x || 0.5);
     const hoopY = h * (analyzerRef.current?.hoopPos.y || 0.22);
-    const shotValue = metrics?.courtStatus.in3PtRange ? 3 : 2;
-
     ctx.save();
 
     // Keep the live camera as the hero and leave court geometry to the mini HUD.
@@ -387,32 +387,10 @@ export function CameraRecorder({
     ctx.stroke();
     ctx.shadowBlur = 0;
 
-    if (metrics?.ballPos) {
-      const labelX = metrics.ballPos.x;
-      const labelY = Math.max(h * 0.14, metrics.ballPos.y - 78);
-      ctx.fillStyle = shotValue === 3 ? 'rgba(0, 255, 148, 0.88)' : 'rgba(255, 107, 0, 0.88)';
-      ctx.beginPath();
-      ctx.roundRect(labelX - 45, labelY - 23, 90, 32, 16);
-      ctx.fill();
-      ctx.fillStyle = '#050505';
-      ctx.font = '900 15px Inter, sans-serif';
-      ctx.textAlign = 'center';
-      ctx.fillText(`${shotValue} PTS`, labelX, labelY - 1);
-    }
-
     ctx.fillStyle = 'rgba(255, 255, 255, 0.72)';
     ctx.font = '800 10px Inter, sans-serif';
     ctx.textAlign = 'center';
-    ctx.fillText('PANIER', hoopX, hoopY - 20);
-
-    if (metrics?.courtStatus.isOutOfBounds) {
-      ctx.fillStyle = 'rgba(239, 68, 68, 0.16)';
-      ctx.fillRect(0, 0, w, h);
-      ctx.fillStyle = 'white';
-      ctx.font = '900 26px Inter, sans-serif';
-      ctx.textAlign = 'center';
-      ctx.fillText('SORTIE', w / 2, h - 100);
-    }
+    ctx.fillText('REPÈRE VISUEL', hoopX, hoopY - 20);
     
     ctx.restore();
   };
@@ -422,10 +400,7 @@ export function CameraRecorder({
     const made = metrics?.madeShots || 0;
     const missed = metrics?.missedShots || 0;
     const attempts = made + missed;
-    const shotValue = metrics?.courtStatus.in3PtRange ? 3 : 2;
-    const madeThreePointers = (metrics?.shots || []).filter((shot) => shot.shotType === 'Three Pointer' && shot.outcome === 'made').length;
-    const score = made * 2 + madeThreePointers;
-    const formScore = metrics ? Math.max(0, Math.min(99, Math.round((metrics.elbowAngle + Math.max(0, 180 - metrics.kneeAngle)) / 2))) : 84;
+    const elbowAngle = metrics?.elbowAngle && metrics.elbowAngle > 0 ? Math.round(metrics.elbowAngle) : null;
 
     ctx.save();
     const hudW = Math.min(360, Math.max(250, w * 0.26));
@@ -437,7 +412,7 @@ export function CameraRecorder({
     ctx.beginPath();
     ctx.roundRect(hudX, hudY, hudW, hudH, 18);
     ctx.fill();
-    ctx.strokeStyle = shotValue === 3 ? '#00FF94' : '#FF6B00';
+    ctx.strokeStyle = '#FF6B00';
     ctx.lineWidth = 2;
     ctx.stroke();
 
@@ -448,11 +423,11 @@ export function CameraRecorder({
 
     ctx.fillStyle = 'rgba(255, 255, 255, 0.62)';
     ctx.font = '800 10px Inter, sans-serif';
-    ctx.fillText(`FORM ${formScore}%  |  SCORE ${score}`, hudX + 76, hudY + 23);
+    ctx.fillText(elbowAngle === null ? 'ANGLE COUDE 2D —' : `ANGLE COUDE 2D ${elbowAngle}°`, hudX + 76, hudY + 23);
 
-    ctx.fillStyle = shotValue === 3 ? '#00FF94' : '#FF6B00';
+    ctx.fillStyle = '#FF6B00';
     ctx.font = '900 13px Inter, sans-serif';
-    ctx.fillText(`${shotValue}PT ZONE`, hudX + 76, hudY + 40);
+    ctx.fillText('RÉSULTATS : ANNOTATION MANUELLE', hudX + 76, hudY + 40);
 
     ctx.restore();
   };
@@ -527,75 +502,6 @@ export function CameraRecorder({
       ctx.font = 'bold 10px Inter, sans-serif';
       ctx.textAlign = 'center';
       ctx.fillText('TARGET', hoopPos.x, hoopPos.y - 18);
-    }
-
-    // Draw Trajectory Arc Prediction (Physics-based)
-    if (metrics?.ballPos && (metrics.isShooting || metrics.ballDetected) && selectedMoves.includes('JUMPSHOT')) {
-      const startX = metrics.ballPos.x;
-      const startY = metrics.ballPos.y;
-      
-      ctx.save();
-      ctx.beginPath();
-      ctx.moveTo(startX, startY);
-      
-      let currentX = startX;
-      let currentY = startY;
-      let vx = metrics.ballVelocity.vx;
-      let vy = metrics.ballVelocity.vy;
-      
-      // If velocity is low but we are shooting, assume an upward shot towards hoop
-      if (metrics.isShooting && Math.abs(vx) < 50 && Math.abs(vy) < 50) {
-        const dx = hoopPos.x - startX;
-        const dy = hoopPos.y - startY;
-        vx = dx * 1.5; // Estimated strength
-        vy = -Math.abs(dx) * 1.2; // High arc
-      }
-
-      const gravity = 1000; 
-      const dt = 0.04; 
-      const friction = 0.99;
-      
-      // Moving dashes for "streaming" effect
-      ctx.setLineDash([10, 8]);
-      ctx.lineDashOffset = -Date.now() / 40;
-      ctx.lineWidth = 4;
-      
-      // Glow and shadow
-      ctx.shadowBlur = 15;
-      ctx.shadowColor = metrics.isShooting ? '#FF6B00' : 'rgba(255, 107, 0, 0.4)';
-      
-      // Gradient for trajectory
-      const grad = ctx.createLinearGradient(startX, startY, hoopPos.x, hoopPos.y);
-      grad.addColorStop(0, '#FF6B00');
-      grad.addColorStop(0.5, '#FFD700');
-      grad.addColorStop(1, '#00FF94');
-      ctx.strokeStyle = grad;
-
-      for (let i = 0; i < 40; i++) {
-        currentX += vx * dt;
-        currentY += vy * dt + 0.5 * gravity * dt * dt;
-        vy += gravity * dt;
-        vx *= friction;
-        vy *= friction;
-        
-        ctx.lineTo(currentX, currentY);
-        
-        if (currentY > h - 40 || currentX < -100 || currentX > w + 100) break;
-      }
-      ctx.stroke();
-      ctx.restore();
-
-      // Draw landing/target prediction dot
-      ctx.beginPath();
-      ctx.arc(currentX, currentY, 8, 0, 2 * Math.PI);
-      ctx.fillStyle = '#00FF94';
-      ctx.fill();
-      ctx.shadowBlur = 20;
-      ctx.shadowColor = '#00FF94';
-      ctx.lineWidth = 2;
-      ctx.strokeStyle = 'white';
-      ctx.stroke();
-      ctx.shadowBlur = 0;
     }
 
     // Draw Dribble Feedbacks
@@ -698,8 +604,7 @@ export function CameraRecorder({
         ctx.moveTo(ballTrailRef.current[0].x, ballTrailRef.current[0].y);
         for (let i = 1; i < ballTrailRef.current.length; i++) {
           const pt = ballTrailRef.current[i];
-          const jitter = isHesi ? Math.sin(Date.now() / 50 + i) * 10 : (Math.random() - 0.5) * (isPass ? 2 : 4);
-          ctx.lineTo(pt.x + jitter, pt.y + jitter);
+          ctx.lineTo(pt.x, pt.y);
         }
         
         let strokeStyle = '#3b82f6';
@@ -962,7 +867,11 @@ export function CameraRecorder({
   const analyzeLoop = useCallback(async () => {
     if (videoRef.current && analyzerRef.current && canvasRef.current && 
         videoRef.current.readyState >= 2 && videoRef.current.videoWidth > 0) {
-      const result = await analyzerRef.current.analyzeFrame(videoRef.current);
+      const result = await analyzerRef.current.analyzeFrame(videoRef.current, {
+        timestampMs: analysisStartTimeRef.current === null
+          ? Date.now()
+          : Date.now() - analysisStartTimeRef.current,
+      });
       if (result) {
         setMetrics(result.metrics);
         if (onMetricsUpdate) onMetricsUpdate(result.metrics);
@@ -996,6 +905,8 @@ export function CameraRecorder({
   const startRecording = () => {
     if (!stream) return;
     chunksRef.current = [];
+    analyzerRef.current?.resetShotSequenceAnalysis();
+    analysisStartTimeRef.current = Date.now();
     const mimeType = MediaRecorder.isTypeSupported('video/webm;codecs=vp8,opus')
       ? 'video/webm;codecs=vp8,opus'
       : MediaRecorder.isTypeSupported('video/webm')
@@ -1007,7 +918,8 @@ export function CameraRecorder({
     };
     mediaRecorder.onstop = () => {
       const blob = new Blob(chunksRef.current, { type: mediaRecorder.mimeType || 'video/webm' });
-      onRecordingComplete(blob);
+      onRecordingComplete(blob, analyzerRef.current?.getShotSequenceAnalysis());
+      analysisStartTimeRef.current = null;
       mediaRecorderRef.current = null;
     };
     mediaRecorder.start(1000);
@@ -1077,8 +989,7 @@ export function CameraRecorder({
         </h3>
 
         <p className="mt-3 text-sm text-white/70 leading-relaxed">
-          Sur mobile/tablette, tourne ton telephone horizontalement pour une meilleure detection des lignes
-          <span className="text-brand-orange font-bold"> 2PT / 3PT</span>.
+          Sur mobile/tablette, tourne ton téléphone horizontalement pour mieux cadrer le joueur et le ballon.
         </p>
       </div>
 
@@ -1497,26 +1408,6 @@ export function CameraRecorder({
             )}
             <MetricTag label="POSSESSION" value={metrics.hasBall ? "OUI" : "NON"} active={metrics.hasBall} delay={0.2} />
             <AnimatePresence>
-              {metrics.courtStatus.in3PtRange && (
-                <motion.div 
-                  initial={{ scale: 0.8, opacity: 0 }}
-                  animate={{ scale: 1, opacity: 1 }}
-                  exit={{ scale: 0.8, opacity: 0 }}
-                  className="px-3 py-1 bg-blue-500 text-white text-[10px] font-bold rounded-lg flex items-center gap-2 shadow-lg shadow-blue-500/20"
-                >
-                  3 POINTS
-                </motion.div>
-              )}
-              {metrics.courtStatus.inPaint && (
-                <motion.div 
-                  initial={{ scale: 0.8, opacity: 0 }}
-                  animate={{ scale: 1, opacity: 1 }}
-                  exit={{ scale: 0.8, opacity: 0 }}
-                  className="px-3 py-1 bg-brand-blue text-white text-[10px] font-bold rounded-lg flex items-center gap-2 shadow-lg shadow-brand-blue/20"
-                >
-                  ZONE PEINTE
-                </motion.div>
-              )}
               {metrics.ballDetected && (
                 <motion.div 
                   initial={{ scale: 0.8, opacity: 0 }}

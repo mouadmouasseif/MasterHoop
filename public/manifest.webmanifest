@@ -1,6 +1,6 @@
 {
-  "name": "MasterHoop AI Basketball Training",
-  "short_name": "MasterHoop",
+  "name": "BasketMotion-Ai AI Basketball Training",
+  "short_name": "BasketMotion-Ai",
   "description": "AI basketball coaching, live training, upload analysis, and session replay.",
   "start_url": "/",
   "scope": "/",

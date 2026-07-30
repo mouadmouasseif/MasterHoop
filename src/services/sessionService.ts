@@ -13,6 +13,7 @@ import {
 
 import { db } from "@/src/lib/firebase";
 import type { PoseMetrics } from "@/src/lib/poseDetection";
+import type { ShotSequenceAnalysis } from "@/src/ai/types";
 import { analyzeBasketballSession, type AIAnalysisResult } from "@/src/services/aiAnalysisService";
 import { buildAdvancedVideoAnalysis, type AdvancedVideoAnalysis } from "@/src/services/aiVisionEngine";
 import { recommendDrills, type TrainingDrill } from "@/src/services/drillRecommendationService";
@@ -45,6 +46,7 @@ export type TrainingSession = {
   reportUrl?: string;
   advancedAnalysis?: AdvancedVideoAnalysis;
   metrics: AIAnalysisResult["metrics"] & Record<string, unknown>;
+  shotAnalysis?: ShotSequenceAnalysis;
 };
 
 export type SaveSessionInput = {
@@ -53,6 +55,7 @@ export type SaveSessionInput = {
   duration: number;
   drillName?: string;
   metrics?: Partial<PoseMetrics> | null;
+  shotAnalysis?: ShotSequenceAnalysis;
   playerName?: string;
   notes?: string;
   onProgress?: UploadProgressHandler;
@@ -66,6 +69,7 @@ export async function saveTrainingSession({
   duration,
   drillName = "Freestyle",
   metrics,
+  shotAnalysis,
   playerName = "John",
   notes = "",
   onProgress,
@@ -99,6 +103,9 @@ export async function saveTrainingSession({
   const missionReport = (metrics as Record<string, unknown> | null | undefined)?.trainingMissionReport || null;
   const missionProgress = (metrics as Record<string, unknown> | null | undefined)?.trainingMissionProgress || null;
   const missionBadges = (metrics as Record<string, unknown> | null | undefined)?.trainingBadges || [];
+  const temporalShotAnalysis = shotAnalysis || (
+    (metrics as Record<string, unknown> | null | undefined)?.shotAnalysis as ShotSequenceAnalysis | undefined
+  );
   const videoUrl = await retryUploadPrivateFile(userId, draft.id, videoBlob, "videos", onProgress);
   const thumbnailBlob = await generateVideoThumbnail(videoBlob);
   const thumbnailUrl = thumbnailBlob
@@ -111,6 +118,7 @@ export async function saveTrainingSession({
     missionReport,
     missionProgress,
     missionBadges,
+    shotAnalysis: temporalShotAnalysis,
     recommendations: advancedAnalysis.report.recommendations,
     recommendedDrills,
   }, null, 2)], { type: "application/json" });
@@ -135,6 +143,7 @@ export async function saveTrainingSession({
     notes,
     reportUrl,
     advancedAnalysis,
+    shotAnalysis: temporalShotAnalysis,
     missionReport,
     missionProgress,
     missionBadges,
@@ -158,7 +167,7 @@ export async function saveTrainingSession({
 
   await Promise.all([
     addDoc(collection(db, "trainings"), { userId, sessionId: draft.id, createdAt: serverTimestamp(), ...sessionPayload }),
-    addDoc(collection(db, "analyses"), { userId, sessionId: draft.id, createdAt: serverTimestamp(), analysis, advancedAnalysis }),
+    addDoc(collection(db, "analyses"), { userId, sessionId: draft.id, createdAt: serverTimestamp(), analysis, advancedAnalysis, shotAnalysis: temporalShotAnalysis || null }),
     addDoc(collection(db, "videos"), { userId, sessionId: draft.id, createdAt: serverTimestamp(), videoUrl, thumbnailUrl }),
     addDoc(collection(db, "reports"), { userId, sessionId: draft.id, createdAt: serverTimestamp(), reportUrl, report: advancedAnalysis.report }),
   ]).catch((error) => {
@@ -184,7 +193,7 @@ export async function listTrainingSessions(userId: string): Promise<TrainingSess
       score: Number(data.score || 0),
       confidenceScore: Number(data.confidenceScore || 0),
       confidenceLabel: data.confidenceLabel || "unreliable",
-      analysisEngine: data.analysisEngine || "masterhoop-local-v1",
+      analysisEngine: data.analysisEngine || "BasketMotion-Ai-local-v1",
       aiFeedback: data.aiFeedback || "",
       strengths: data.strengths || [],
       weaknesses: data.weaknesses || [],
@@ -195,6 +204,7 @@ export async function listTrainingSessions(userId: string): Promise<TrainingSess
       notes: data.notes || "",
       reportUrl: data.reportUrl || "",
       advancedAnalysis: data.advancedAnalysis,
+      shotAnalysis: data.shotAnalysis,
       metrics: data.metrics || {},
     };
   });

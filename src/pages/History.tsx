@@ -79,7 +79,12 @@ export default function History({ user, refreshKey = 0 }: { user: User | null; r
       {selected && (
         <div className="grid gap-5 xl:grid-cols-[1.2fr_0.8fr]">
           <SessionPlayer session={selected} />
-          {selectedAnalysis && <AIAnalyticsPanel analysis={{ ...selectedAnalysis, score: selected.score || selectedAnalysis.score, aiFeedback: selected.aiFeedback || selectedAnalysis.aiFeedback }} />}
+          {selectedAnalysis && <AIAnalyticsPanel analysis={{
+            ...selectedAnalysis,
+            score: selected.score || selectedAnalysis.score,
+            aiFeedback: selected.aiFeedback || selectedAnalysis.aiFeedback,
+            shotAnalysis: selected.shotAnalysis,
+          }} />}
         </div>
       )}
 

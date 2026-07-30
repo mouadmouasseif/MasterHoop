@@ -25,7 +25,7 @@ function drawHoop(ctx: CanvasRenderingContext2D, scan: CourtScanResult) {
   ctx.fillStyle = "rgba(255,255,255,0.72)";
   ctx.font = "800 10px Inter, sans-serif";
   ctx.textAlign = "center";
-  ctx.fillText(`${Math.round(scan.hoop.confidence * 100)}%`, x, y - 18);
+  ctx.fillText("REPÈRE MANUEL", x, y - 18);
 }
 
 function drawBallTrail(ctx: CanvasRenderingContext2D, scan: CourtScanResult) {
@@ -59,7 +59,7 @@ function drawPlayerZone(ctx: CanvasRenderingContext2D, scan: CourtScanResult) {
 }
 
 function drawStatus(ctx: CanvasRenderingContext2D, scan: CourtScanResult) {
-  const label = scan.shotZone === "threePoint" ? "3 POINTS" : scan.shotZone === "near" ? "PROCHE" : scan.shotZone === "midRange" ? "MI-DISTANCE" : "SCAN";
+  const label = "NON CALIBRÉ";
   const x = 18;
   const y = scan.height - 58;
   const width = Math.min(scan.width - 36, 360);

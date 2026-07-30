@@ -1,12 +1,5 @@
 import { AnimatePresence, motion } from "motion/react";
 import { useEffect, useMemo, useRef, useState } from "react";
-import {
-  Area,
-  AreaChart,
-  ResponsiveContainer,
-  XAxis,
-  YAxis,
-} from "recharts";
 
 import {
   Activity,
@@ -29,7 +22,7 @@ import { CameraRecorder } from "@/src/components/CameraRecorder";
 import VideoUploader from "@/src/components/VideoUploader";
 import AnalysisRow from "@/src/components/ui/AnalysisRow";
 import StatCard from "@/src/components/ui/StatCard";
-import { PERFORMANCE_DATA } from "@/src/constants/basketball";
+import type { ShotSequenceAnalysis } from "@/src/ai/types";
 import {
   buildTrainingMissionProgress,
   buildTrainingMissionReport,
@@ -111,9 +104,6 @@ export default function LiveTraining(props: any) {
   const scoreShot = (isMade: boolean) => {
     const nextMade = isMade ? madeCount + 1 : madeCount;
     const nextMiss = isMade ? missCount : missCount + 1;
-    const nextAttempt = nextMade + nextMiss;
-    const shotType = nextAttempt % 3 === 0 ? "Three Pointer" : "Mid Range";
-
     setMadeCount(nextMade);
     setMissCount(nextMiss);
 
@@ -126,7 +116,12 @@ export default function LiveTraining(props: any) {
       isShooting: true,
       shots: [
         ...((safeMetrics as any).shots || []),
-        { x: 50, y: shotType === "Three Pointer" ? 72 : 45, z: 10, shotType, outcome: isMade ? "made" : "missed" },
+        {
+          shotType: "unknown",
+          outcome: isMade ? "made" : "missed",
+          confidence: 1,
+          source: "manual_user_annotation",
+        },
       ],
     });
   };
@@ -166,7 +161,7 @@ export default function LiveTraining(props: any) {
     setIsRecording(true);
   };
 
-  const completeRecordingWithMission = (blob: Blob) => {
+  const completeRecordingWithMission = (blob: Blob, shotAnalysis?: ShotSequenceAnalysis) => {
     const report = buildTrainingMissionReport(selectedMissionId, selectedLevel, safeMetrics, elapsedSeconds);
     setFinalReport(report);
     setMissionStarted(false);
@@ -176,6 +171,7 @@ export default function LiveTraining(props: any) {
       trainingMissionReport: report,
       trainingMissionProgress: missionProgress,
       trainingBadges: report.badges,
+      shotAnalysis,
     };
     handleMetricsUpdate(enrichedMetrics);
     handleRecordingComplete(blob, enrichedMetrics);
@@ -244,8 +240,8 @@ export default function LiveTraining(props: any) {
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-4 md:gap-4">
           <StatCard
             icon={<Activity />}
-            value={`${safeMetrics.elbowAngle || 72}%`}
-            label="Accuracy"
+            value={safeMetrics.elbowAngle ? `${Math.round(safeMetrics.elbowAngle)}°` : "—"}
+            label="Angle du coude"
           />
 
           <StatCard
@@ -257,8 +253,8 @@ export default function LiveTraining(props: any) {
 
           <StatCard
             icon={<Zap />}
-            value="840"
-            label="Kcal"
+            value={safeMetrics.ballConfidence ? `${Math.round(safeMetrics.ballConfidence)}%` : "—"}
+            label="Confiance ballon"
           />
 
           <StatCard
@@ -383,7 +379,7 @@ export default function LiveTraining(props: any) {
             <div className="mb-4 flex items-center gap-2 text-sm font-black uppercase text-brand-orange"><Award size={17} /> Rapport Final</div>
             <div className="grid grid-cols-2 gap-3 text-sm">
               <MiniReport label="Completion" value={`${finalReport.completionRate}%`} />
-              <MiniReport label="AI Score" value={`${finalReport.aiScore}`} />
+              <MiniReport label="Score fiable" value={finalReport.aiScore === null ? "Indisponible" : `${finalReport.aiScore}`} />
               <MiniReport label="Shots" value={`${finalReport.shotsMade}/${finalReport.shotsAttempted}`} />
               <MiniReport label="FG%" value={`${finalReport.shootingPercentage}%`} />
               <MiniReport label="Crossovers" value={`${finalReport.crossoversCompleted}`} />
@@ -421,41 +417,24 @@ export default function LiveTraining(props: any) {
           />
         </div>
 
-        {/* AUTO SCORING TEST PANEL */}
+        {/* Human annotations are explicit and are not presented as vision results. */}
         <div className="glass-card p-6">
-          <h3 className="font-bold mb-3">Quick Score</h3>
+          <h3 className="font-bold mb-2">Validation manuelle</h3>
+          <p className="mb-3 text-xs leading-5 text-white/45">À utiliser uniquement si vous avez observé le résultat. Ces boutons ajoutent une annotation utilisateur, pas une détection IA.</p>
 
           <button
             onClick={() => scoreShot(true)}
             className="w-full py-3 bg-green-500 rounded-xl mb-2"
           >
-            Shot Made (+2)
+            Annoter : réussi
           </button>
 
           <button
             onClick={() => scoreShot(false)}
             className="w-full py-3 bg-red-500 rounded-xl"
           >
-            Shot Missed
+            Annoter : manqué
           </button>
-        </div>
-
-        {/* CHART */}
-        <div className="glass-card p-6">
-          <h3 className="font-bold mb-4">Performance</h3>
-
-          <ResponsiveContainer width="100%" height={200}>
-            <AreaChart data={PERFORMANCE_DATA}>
-              <XAxis dataKey="time" hide />
-              <YAxis hide />
-              <Area
-                type="monotone"
-                dataKey="bpm"
-                stroke="#00FF94"
-                fill="#00FF94"
-              />
-            </AreaChart>
-          </ResponsiveContainer>
         </div>
       </div>
     </motion.div>

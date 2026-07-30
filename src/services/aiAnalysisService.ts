@@ -28,6 +28,7 @@ export async function analyzeUploadedVideo(file: File): Promise<AIAnalysisResult
         : "Qualité vidéo insuffisante : les mesures sont affichées avec prudence et aucun diagnostic fiable n’est confirmé.",
       videoQuality: extracted.quality,
       observedMetrics: extracted.metrics,
+      shotAnalysis: extracted.shotAnalysis,
       limitations: [...result.limitations, ...extracted.quality.issues],
     };
   } catch (error) {

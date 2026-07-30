@@ -2,7 +2,7 @@ import * as cocoSsd from "@tensorflow-models/coco-ssd";
 import * as tf from "@tensorflow/tfjs-core";
 import { loadGraphModel, type GraphModel } from "@tensorflow/tfjs-converter";
 
-export type DetectionSource = "masterhoop-model" | "coco-ssd";
+export type DetectionSource = "BasketMotion-Ai-model" | "coco-ssd";
 
 export type BasketballDetectedObject = {
   bbox: [number, number, number, number];
@@ -25,6 +25,7 @@ export interface BasketballObjectDetector {
 
 const MODEL_URL = import.meta.env.VITE_BALL_MODEL_URL?.trim();
 const MIN_CONFIDENCE = 0.35;
+const MIN_SPECIALIZED_TRACKING_CONFIDENCE = 0.45;
 const IOU_THRESHOLD = 0.45;
 
 export class HybridBasketballObjectDetector implements BasketballObjectDetector {
@@ -40,7 +41,7 @@ export class HybridBasketballObjectDetector implements BasketballObjectDetector 
     if (MODEL_URL) {
       try {
         this.specializedModel = await loadGraphModel(MODEL_URL);
-        this.status = { source: "masterhoop-model", specializedModelConfigured: true };
+        this.status = { source: "BasketMotion-Ai-model", specializedModelConfigured: true };
         return;
       } catch (error) {
         this.status = {
@@ -50,23 +51,76 @@ export class HybridBasketballObjectDetector implements BasketballObjectDetector 
         };
       }
     }
-    this.fallbackModel = await cocoSsd.load();
+    await this.ensureFallbackModel();
   }
 
   async detect(input: HTMLVideoElement | HTMLCanvasElement) {
-    if (this.specializedModel) return this.detectWithSpecializedModel(input);
+    if (this.specializedModel) {
+      try {
+        const detections = await this.detectWithSpecializedModel(input);
+        if (detections.some((detection) => detection.score >= MIN_SPECIALIZED_TRACKING_CONFIDENCE)) {
+          this.status = { source: "BasketMotion-Ai-model", specializedModelConfigured: true };
+          return detections;
+        }
+        this.status = {
+          source: "coco-ssd",
+          specializedModelConfigured: true,
+          fallbackReason: "Le modèle spécialisé n’a produit aucune détection suffisamment fiable.",
+        };
+      } catch (error) {
+        this.status = {
+          source: "coco-ssd",
+          specializedModelConfigured: true,
+          fallbackReason: error instanceof Error ? error.message : "Erreur d’inférence du modèle spécialisé.",
+        };
+      }
+    }
+    await this.ensureFallbackModel();
     if (!this.fallbackModel) return [];
     const objects = await this.fallbackModel.detect(input);
-    return objects.map((object) => ({
-      bbox: object.bbox as [number, number, number, number],
-      class: object.class,
-      score: object.score,
-      source: "coco-ssd" as const,
-    }));
+    return objects
+      .filter((object) => object.class === "sports ball" && object.score >= MIN_CONFIDENCE)
+      .map((object) => ({
+        bbox: object.bbox as [number, number, number, number],
+        class: object.class,
+        score: object.score,
+        source: "coco-ssd" as const,
+      }));
   }
 
   getStatus() {
     return this.status;
+  }
+
+  isAvailable() {
+    return Boolean(this.specializedModel || this.fallbackModel);
+  }
+
+  async dispose() {
+    this.specializedModel?.dispose();
+    this.specializedModel = null;
+    this.fallbackModel?.dispose();
+    this.fallbackModel = null;
+  }
+
+  private async ensureFallbackModel() {
+    if (this.fallbackModel) return;
+    try {
+      this.fallbackModel = await cocoSsd.load();
+      if (!this.specializedModel) {
+        this.status = {
+          source: "coco-ssd",
+          specializedModelConfigured: Boolean(MODEL_URL),
+          fallbackReason: this.status.fallbackReason,
+        };
+      }
+    } catch (error) {
+      this.status = {
+        source: "coco-ssd",
+        specializedModelConfigured: Boolean(MODEL_URL),
+        fallbackReason: error instanceof Error ? error.message : "Chargement de COCO-SSD impossible.",
+      };
+    }
   }
 
   private async detectWithSpecializedModel(input: HTMLVideoElement | HTMLCanvasElement) {
@@ -177,7 +231,7 @@ export function decodeBasketballPredictions(
       bbox: [boxX, boxY, boxWidth, boxHeight],
       class: "sports ball",
       score,
-      source: "masterhoop-model",
+      source: "BasketMotion-Ai-model",
     });
   }
   return detections;

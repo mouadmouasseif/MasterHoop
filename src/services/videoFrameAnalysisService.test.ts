@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest";
 
-import { calculateFrameVisualStats } from "@/src/services/videoFrameAnalysisService";
+import {
+  buildDenseShotTimes,
+  calculateFrameVisualStats,
+} from "@/src/services/videoFrameAnalysisService";
 
 function image(width: number, height: number, values: number[]): ImageData {
   const data = new Uint8ClampedArray(width * height * 4);
@@ -30,5 +33,14 @@ describe("videoFrameAnalysisService", () => {
 
     expect(contrasted.contrast).toBeGreaterThan(flat.contrast);
     expect(contrasted.sharpness).toBeGreaterThan(flat.sharpness);
+  });
+
+  it("construit une fenêtre dense, bornée et chronologique autour d'un tir candidat", () => {
+    const times = buildDenseShotTimes(20, [10]);
+
+    expect(times[0]).toBe(8.8);
+    expect(times.at(-1)).toBe(11.8);
+    expect(times).toHaveLength(31);
+    expect(times.every((time, index) => index === 0 || time > times[index - 1])).toBe(true);
   });
 });

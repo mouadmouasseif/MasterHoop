@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Camera, CircleStop, Download, Play, Radio, Target } from "lucide-react";
 import type { AIMatchRecord, MatchStats, MatchTimelineEvent } from "@/src/types";
-import { createEmptyMatchStats, finishMatch, updateMatchAiFrame } from "@/src/services/socialService";
+import { finishMatch, updateMatchAiFrame } from "@/src/services/socialService";
 import { uploadSharedMatchFile } from "@/src/services/firebaseStorage";
 import { buildMatchSummary } from "@/src/services/matchScoreService";
 import { downloadHighlightJson } from "@/src/services/highlightExportService";
@@ -18,7 +18,7 @@ export default function AIMatchRecorder({ match, ownerUid }: { match: AIMatchRec
   const [score, setScore] = useState<Score>(match.score || { A: 0, B: 0 });
   const [timeline, setTimeline] = useState<MatchTimelineEvent[]>(match.timeline || []);
   const [stats, setStats] = useState<Record<string, MatchStats>>(match.stats || {});
-  const [status, setStatus] = useState("Camera IA prete.");
+  const [status, setStatus] = useState("Caméra prête. L’analyse automatique de match n’est pas activée.");
   const startedAtRef = useRef<number>(0);
 
   const players = useMemo(() => {
@@ -30,26 +30,6 @@ export default function AIMatchRecorder({ match, ownerUid }: { match: AIMatchRec
     () => buildMatchSummary(match.id, timeline.map(toMatchEvent).reverse()),
     [match.id, timeline],
   );
-
-  useEffect(() => {
-    if (!recording) return undefined;
-    const timer = window.setInterval(() => {
-      const now = Math.round((Date.now() - startedAtRef.current) / 1000);
-      const event = buildSimulatedEvent(now, match, players);
-
-      setTimeline((current) => {
-        const next = [event, ...current].slice(0, 80);
-        return next;
-      });
-      setScore((current) => {
-        const next = event.points ? { ...current, [event.team]: current[event.team] + event.points } : current;
-        return next;
-      });
-      setStats((current) => applyEventToStats(current, event));
-      setStatus(`${event.type}: detection YOLO/OpenCV/MediaPipe simulee a ${formatTime(now)}.`);
-    }, 6500);
-    return () => window.clearInterval(timer);
-  }, [match, players, recording]);
 
   useEffect(() => {
     if (!recording) return;
@@ -78,7 +58,7 @@ export default function AIMatchRecorder({ match, ownerUid }: { match: AIMatchRec
     recorderRef.current = recorder;
     startedAtRef.current = Date.now();
     setRecording(true);
-    setStatus("AI Camera active: joueurs, ballon, panier et trajectoire en analyse.");
+    setStatus("Capture vidéo active. Aucun événement de match n’est généré automatiquement.");
   }
 
   async function stop() {
@@ -104,21 +84,16 @@ export default function AIMatchRecorder({ match, ownerUid }: { match: AIMatchRec
       stats,
       timeline,
       participantUids: match.participantUids,
-      aiAnalysis: {
-        stack: ["YOLOv11", "OpenCV", "MediaPipe", "TensorFlow"],
-        basketRule: "Ball crosses hoop ring top-to-bottom",
-        threePointRule: "Shooter distance estimated against hoop geometry",
-        processedClientSide: true,
-      },
+      aiAnalysis: { status: "unavailable", reason: "Le moteur d’événements de match n’est pas implémenté dans les Sprints 1 et 2." },
     });
-    setStatus("Match termine: video, stats, timeline et rapport IA distribues.");
+    setStatus("Match terminé : vidéo enregistrée. Seules les annotations existantes ont été conservées.");
   }
 
   return (
     <div className="glass-card overflow-hidden">
       <div className="flex flex-col gap-3 border-b border-white/10 p-5 md:flex-row md:items-center md:justify-between">
         <div>
-          <div className="flex items-center gap-2 text-sm font-black uppercase text-brand-orange"><Radio size={17} /> AI Camera</div>
+          <div className="flex items-center gap-2 text-sm font-black uppercase text-brand-orange"><Radio size={17} /> Caméra de match</div>
           <div className="mt-1 text-xs text-white/45">{status}</div>
         </div>
         <div className="flex gap-2">
@@ -144,14 +119,12 @@ export default function AIMatchRecorder({ match, ownerUid }: { match: AIMatchRec
             </div>
           )}
           <div className="absolute left-4 top-4 rounded-xl border border-white/10 bg-black/60 px-4 py-3 backdrop-blur">
-            <div className="text-[10px] font-black uppercase text-white/45">Score auto</div>
+            <div className="text-[10px] font-black uppercase text-white/45">Score validé</div>
             <div className="text-2xl font-black text-brand-neon">Team A {score.A} - {score.B} Team B</div>
           </div>
           <div className="absolute bottom-4 left-4 flex gap-2">
-            <AiBadge label="Joueurs" active={recording} />
-            <AiBadge label="Ballon" active={recording} />
-            <AiBadge label="Panier" active={recording} />
-            <AiBadge label="3PT Line" active={recording} />
+            <AiBadge label="Capture vidéo" active={recording} />
+            <AiBadge label="Analyse événements indisponible" active={false} />
           </div>
         </div>
 
@@ -168,7 +141,7 @@ export default function AIMatchRecorder({ match, ownerUid }: { match: AIMatchRec
                 <div className="text-[10px] text-white/35">{event.playerId}</div>
               </button>
             ))}
-            {timeline.length === 0 && <div className="text-sm text-white/40">Les paniers, assists, rebonds, steals et blocks apparaitront ici automatiquement.</div>}
+            {timeline.length === 0 && <div className="text-sm text-white/40">Aucun événement validé. L’annotation automatique sera ajoutée dans un sprint futur après validation du modèle.</div>}
           </div>
         </div>
       </div>
@@ -182,22 +155,6 @@ function AiBadge({ label, active }: { label: string; active: boolean }) {
       {label}
     </div>
   );
-}
-
-function buildSimulatedEvent(timestamp: number, match: AIMatchRecord, players: string[]): MatchTimelineEvent {
-  const options = ["2 Points", "3 Points", "Assist", "Rebound", "Block", "Steal"] as const;
-  const type = options[Math.floor(Math.random() * options.length)];
-  const team: "A" | "B" = Math.random() > 0.5 ? "A" : "B";
-  const pool = team === "A" ? match.teamA : match.teamB;
-  const playerId = pool?.[Math.floor(Math.random() * pool.length)] || players[Math.floor(Math.random() * players.length)] || match.userId;
-  return {
-    id: `event-${Date.now()}-${Math.round(Math.random() * 1000)}`,
-    timestamp,
-    type,
-    playerId,
-    team,
-    points: type === "2 Points" ? 2 : type === "3 Points" ? 3 : undefined,
-  };
 }
 
 function toMatchEvent(event: MatchTimelineEvent): MatchEvent {
@@ -217,33 +174,6 @@ function toMatchEvent(event: MatchTimelineEvent): MatchEvent {
       ? "steal"
       : "score_change",
   };
-}
-
-function applyEventToStats(current: Record<string, MatchStats>, event: MatchTimelineEvent) {
-  const next = { ...current };
-  const playerStats = { ...(next[event.playerId] || createEmptyMatchStats()) };
-  playerStats.minutesPlayed = Math.max(playerStats.minutesPlayed, Math.ceil(event.timestamp / 60));
-
-  if (event.points) {
-    playerStats.shotsAttempted += 1;
-    playerStats.shotsMade += 1;
-    playerStats.shots += 1;
-    playerStats.madeShots += 1;
-    playerStats.fieldGoalPercentage = Math.round((playerStats.shotsMade / Math.max(1, playerStats.shotsAttempted)) * 100);
-  } else if (event.type === "Assist") {
-    playerStats.assists += 1;
-  } else if (event.type === "Rebound") {
-    playerStats.rebounds += 1;
-    if (Math.random() > 0.5) playerStats.offensiveRebounds += 1;
-    else playerStats.defensiveRebounds += 1;
-  } else if (event.type === "Steal") {
-    playerStats.steals += 1;
-  } else if (event.type === "Block") {
-    playerStats.blocks += 1;
-  }
-
-  next[event.playerId] = playerStats;
-  return next;
 }
 
 function pickMimeType() {

@@ -1,4 +1,5 @@
 import type { PoseMetrics } from "@/src/lib/poseDetection";
+import type { ShotSequenceAnalysis } from "@/src/ai/types";
 import {
   OpenCVFramePreprocessor,
   type OpenCVFrameResult,
@@ -30,6 +31,7 @@ export type VideoQualityReport = {
 export type ExtractedVideoMetrics = {
   metrics: Partial<PoseMetrics> | null;
   quality: VideoQualityReport;
+  shotAnalysis: ShotSequenceAnalysis;
 };
 
 type FrameVisualStats = {
@@ -72,7 +74,8 @@ export async function extractVideoMetrics(file: File): Promise<ExtractedVideoMet
     await analyzer.initialize();
     const sampleTimes = buildSampleTimes(video.duration, SAMPLE_COUNT);
 
-    for (const time of sampleTimes) {
+    const shootingCandidateTimes: number[] = [];
+    for (const [index, time] of sampleTimes.entries()) {
       await seekVideo(video, time);
       context.drawImage(video, 0, 0, canvas.width, canvas.height);
       const originalImage = context.getImageData(0, 0, canvas.width, canvas.height);
@@ -88,8 +91,21 @@ export async function extractVideoMetrics(file: File): Promise<ExtractedVideoMet
         }
       }
 
-      const frameAnalysis = await analyzer.analyzeFrame(canvas);
-      if (frameAnalysis?.metrics) observedMetrics.push(frameAnalysis.metrics);
+      const frameAnalysis = await analyzer.analyzeFrame(canvas, { frameIndex: index, timestampMs: time * 1000 });
+      if (frameAnalysis?.metrics) {
+        observedMetrics.push(frameAnalysis.metrics);
+        if (frameAnalysis.metrics.isShooting) shootingCandidateTimes.push(time);
+      }
+    }
+
+    if (shootingCandidateTimes.length) {
+      analyzer.resetShotSequenceAnalysis();
+      const denseTimes = buildDenseShotTimes(video.duration, shootingCandidateTimes);
+      for (const [index, time] of denseTimes.entries()) {
+        await seekVideo(video, time);
+        context.drawImage(video, 0, 0, canvas.width, canvas.height);
+        await analyzer.analyzeFrame(canvas, { frameIndex: index, timestampMs: time * 1000 });
+      }
     }
 
     const quality = buildQualityReport({
@@ -104,6 +120,7 @@ export async function extractVideoMetrics(file: File): Promise<ExtractedVideoMet
     return {
       metrics: aggregatePoseMetrics(observedMetrics),
       quality,
+      shotAnalysis: analyzer.getShotSequenceAnalysis(),
     };
   } finally {
     preprocessor.dispose();
@@ -207,6 +224,18 @@ function buildSampleTimes(duration: number, count: number) {
   );
 }
 
+export function buildDenseShotTimes(duration: number, candidates: number[]): number[] {
+  const times = new Set<number>();
+  for (const candidate of candidates.slice(0, 3)) {
+    const start = Math.max(0, candidate - 1.2);
+    const end = Math.min(Math.max(0, duration - 0.05), candidate + 1.8);
+    for (let time = start; time <= end + 0.001; time += 0.1) {
+      times.add(Number(time.toFixed(3)));
+    }
+  }
+  return [...times].sort((left, right) => left - right).slice(0, 90);
+}
+
 function average(values: number[]) {
   return values.length ? values.reduce((sum, value) => sum + value, 0) / values.length : 0;
 }
@@ -233,7 +262,7 @@ function aggregatePoseMetrics(frames: PoseMetrics[]): Partial<PoseMetrics> | nul
     ballDetected: frames.some((frame) => frame.ballDetected),
     ballConfidence: averageMetric(frames, "ballConfidence"),
     ballDetectorSource:
-      frames.find((frame) => frame.ballDetectorSource === "masterhoop-model")?.ballDetectorSource ||
+      frames.find((frame) => frame.ballDetectorSource === "BasketMotion-Ai-model")?.ballDetectorSource ||
       "coco-ssd",
     ballPos: lastFrame.ballPos,
     ballVelocity: lastFrame.ballVelocity,

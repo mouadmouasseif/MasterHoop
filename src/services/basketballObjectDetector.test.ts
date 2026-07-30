@@ -19,15 +19,15 @@ describe("basketballObjectDetector", () => {
 
     expect(detections).toHaveLength(1);
     expect(detections[0].class).toBe("sports ball");
-    expect(detections[0].source).toBe("masterhoop-model");
+    expect(detections[0].source).toBe("BasketMotion-Ai-model");
     expect(detections[0].score).toBeCloseTo(0.92);
   });
 
   it("supprime les boîtes fortement superposées", () => {
     const detections: BasketballDetectedObject[] = [
-      { bbox: [10, 10, 30, 30], class: "sports ball", score: 0.9, source: "masterhoop-model" },
-      { bbox: [12, 12, 30, 30], class: "sports ball", score: 0.7, source: "masterhoop-model" },
-      { bbox: [100, 100, 20, 20], class: "sports ball", score: 0.8, source: "masterhoop-model" },
+      { bbox: [10, 10, 30, 30], class: "sports ball", score: 0.9, source: "BasketMotion-Ai-model" },
+      { bbox: [12, 12, 30, 30], class: "sports ball", score: 0.7, source: "BasketMotion-Ai-model" },
+      { bbox: [100, 100, 20, 20], class: "sports ball", score: 0.8, source: "BasketMotion-Ai-model" },
     ];
 
     const selected = nonMaximumSuppression(detections, 0.45);

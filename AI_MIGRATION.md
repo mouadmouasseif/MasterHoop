@@ -1,4 +1,4 @@
-# Migration vers l’IA personnalisée MasterHoop
+# Migration vers l’IA personnalisée BasketMotion-Ai
 
 ## État actuel
 
@@ -73,8 +73,8 @@ confiance, une suppression des boîtes superposées, un contrôle de taille, la
 continuité temporelle et une préférence pour les détections proches des poignets.
 
 Le rapport conserve la confiance du ballon et indique si la détection vient du modèle
-MasterHoop ou du repli COCO-SSD.
-Les scores sont des règles MasterHoop initiales et doivent être calibrés avec un coach
+BasketMotion-Ai ou du repli COCO-SSD.
+Les scores sont des règles BasketMotion-Ai initiales et doivent être calibrés avec un coach
 et un jeu de données représentatif.
 
 ## Prochaines étapes

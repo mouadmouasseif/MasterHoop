@@ -2,9 +2,9 @@ import type { PoseMetrics } from "@/src/lib/poseDetection";
 import type { PlayerAnalysisReport } from "@/src/types";
 
 export type VisionStack = {
-  detector: "YOLOv11-ready" | "COCO-SSD-browser";
-  pose: "MediaPipe-ready" | "MoveNet-browser";
-  processing: "OpenCV-ready" | "Canvas-browser";
+  detector: "BasketMotion-Ai-model" | "coco-ssd-browser" | "unavailable";
+  pose: "MoveNet-browser";
+  processing: "frame-observations-only";
 };
 
 export type PlayerTrack = {
@@ -12,133 +12,90 @@ export type PlayerTrack = {
   name: string;
   team?: string;
   positions: { x: number; y: number; t: number }[];
-  speed: number;
-  distance: number;
-  directionChanges: number;
-  spaceCreated: number;
+  speed: number | null;
+  distance: number | null;
+  directionChanges: number | null;
+  spaceCreated: number | null;
 };
 
 export type AdvancedVideoAnalysis = {
   stack: VisionStack;
   players: PlayerTrack[];
-  ball: { detected: boolean; confidence: number; x?: number; y?: number };
-  hoop: { detected: boolean; confidence: number; x: number; y: number };
-  heatmap: { x: number; y: number; intensity: number }[];
+  ball: { detected: boolean; confidence: number; x?: number; y?: number; source: string };
+  hoop: { detected: false; confidence: 0; x: null; y: null; limitations: string[] };
+  heatmap: [];
   attacker: {
-    speed: number;
-    distance: number;
-    directionChanges: number;
-    spaceCreated: number;
-    successRate: number;
+    speed: number | null;
+    distance: number | null;
+    directionChanges: number | null;
+    spaceCreated: number | null;
+    successRate: number | null;
   };
   defender: {
-    positioning: number;
-    distanceToAttacker: number;
-    reactionTime: number;
-    lateralDefense: number;
-    shotContests: number;
+    positioning: number | null;
+    distanceToAttacker: number | null;
+    reactionTime: number | null;
+    lateralDefense: number | null;
+    shotContests: number | null;
   };
   report: PlayerAnalysisReport;
+  limitations: string[];
 };
-
-const clamp = (value: number, min = 0, max = 100) => Math.max(min, Math.min(max, Math.round(value)));
 
 export function buildAdvancedVideoAnalysis(
   metrics?: Partial<PoseMetrics> | null,
-  playerName = "John",
+  playerName = "Joueur",
 ): AdvancedVideoAnalysis {
-  const made = Number(metrics?.madeShots || 0);
-  const missed = Number(metrics?.missedShots || 0);
+  const made = finiteCount(metrics?.madeShots);
+  const missed = finiteCount(metrics?.missedShots);
   const attempts = made + missed;
-  const successRate = attempts ? Math.round((made / attempts) * 100) : 72;
-  const dribbles = Number(metrics?.dribbleCount || 0);
-  const rhythm = Number(metrics?.dribbleRhythm || 104);
-  const speed = Number((5.8 + Math.min(rhythm, 170) / 120 + dribbles * 0.03).toFixed(1));
-  const distance = Math.round(180 + dribbles * 4.5 + attempts * 9);
-  const directionChanges = Math.max(2, Math.round(dribbles / 3));
-  const spaceCreated = clamp(52 + directionChanges * 3 + successRate * 0.18);
-  const lateralDefense = clamp(68 + Number(metrics?.kneeAngle || 62) * 0.18);
-  const defenseScore = clamp((lateralDefense + 74 + Math.max(50, 92 - missed * 3)) / 3);
-  const offenseScore = clamp((successRate + spaceCreated + Number(metrics?.elbowAngle || 76)) / 3);
+  const successRate = attempts > 0 ? Math.round((made / attempts) * 100) : null;
+  const confidence = finiteConfidence(metrics?.ballConfidence);
+  const ballObserved = metrics?.ballDetected === true && Boolean(metrics.ballPos) && confidence > 0;
+  const detector = metrics?.ballDetectorSource === "BasketMotion-Ai-model"
+    ? "BasketMotion-Ai-model"
+    : metrics?.ballDetectorSource === "coco-ssd"
+      ? "coco-ssd-browser"
+      : "unavailable";
 
-  const weaknesses = [
-    ...(lateralDefense < 78 ? ["lateral movement"] : []),
-    ...(successRate < 72 ? ["shot consistency"] : []),
-    ...(spaceCreated < 75 ? ["creation d'espace"] : []),
+  const limitations = [
+    "Aucune calibration métrique : vitesse et distance réelles indisponibles.",
+    "Le panier n’est pas détecté par un modèle dédié : résultat du tir indisponible.",
+    "Aucun suivi multi-joueur validé : statistiques offensives et défensives indisponibles.",
   ];
 
-  const recommendations = recommendFromWeaknesses(weaknesses);
-
   return {
-    stack: {
-      detector: "YOLOv11-ready",
-      pose: "MediaPipe-ready",
-      processing: "OpenCV-ready",
-    },
-    players: [
-      {
-        id: "p1",
-        name: playerName,
-        positions: [
-          { x: 22, y: 72, t: 0 },
-          { x: 38, y: 64, t: 1 },
-          { x: 51, y: 48, t: 2 },
-          { x: 61, y: 38, t: 3 },
-        ],
-        speed,
-        distance,
-        directionChanges,
-        spaceCreated,
-      },
-    ],
+    stack: { detector, pose: "MoveNet-browser", processing: "frame-observations-only" },
+    players: [],
     ball: {
-      detected: Boolean(metrics?.ballDetected || metrics?.ballPos),
-      confidence: metrics?.ballDetected ? 0.86 : 0.58,
-      x: metrics?.ballPos?.x,
-      y: metrics?.ballPos?.y,
+      detected: ballObserved,
+      confidence,
+      x: ballObserved ? metrics?.ballPos?.x : undefined,
+      y: ballObserved ? metrics?.ballPos?.y : undefined,
+      source: detector,
     },
-    hoop: { detected: true, confidence: 0.81, x: 50, y: 18 },
-    heatmap: [
-      { x: 24, y: 74, intensity: 0.45 },
-      { x: 38, y: 62, intensity: 0.72 },
-      { x: 51, y: 48, intensity: 0.92 },
-      { x: 62, y: 36, intensity: 0.66 },
-    ],
-    attacker: {
-      speed,
-      distance,
-      directionChanges,
-      spaceCreated,
-      successRate,
-    },
-    defender: {
-      positioning: defenseScore,
-      distanceToAttacker: Number((1.4 + missed * 0.12).toFixed(1)),
-      reactionTime: Number((0.42 + Math.max(0, 82 - defenseScore) / 100).toFixed(2)),
-      lateralDefense,
-      shotContests: Math.max(1, Math.round(attempts * 0.42)),
-    },
+    hoop: { detected: false, confidence: 0, x: null, y: null, limitations: ["Détecteur de panier non disponible."] },
+    heatmap: [],
+    attacker: { speed: null, distance: null, directionChanges: null, spaceCreated: null, successRate },
+    defender: { positioning: null, distanceToAttacker: null, reactionTime: null, lateralDefense: null, shotContests: null },
     report: {
       player: playerName,
-      offense_score: offenseScore,
-      defense_score: defenseScore,
-      speed,
-      distance,
-      weaknesses,
-      recommendations,
+      offense_score: null,
+      defense_score: null,
+      speed: null,
+      distance: null,
+      weaknesses: [],
+      recommendations: [],
     },
+    limitations,
   };
 }
 
-function recommendFromWeaknesses(weaknesses: string[]) {
-  if (weaknesses.includes("lateral movement")) {
-    return ["Defensive Slides", "Closeout Drill", "Mirror Drill"];
-  }
-  if (weaknesses.includes("shot consistency")) {
-    return ["Form Shooting Ladder", "Quick Release Series", "Corner 25"];
-  }
-  if (weaknesses.includes("creation d'espace")) {
-    return ["Step-back Separation", "Hesitation Drive", "Change of Pace Series"];
-  }
-  return ["Game Speed Finishing", "Weak Hand Combo", "Conditioning Closeouts"];
+function finiteCount(value: unknown): number {
+  return typeof value === "number" && Number.isFinite(value) && value > 0 ? Math.floor(value) : 0;
+}
+
+function finiteConfidence(value: unknown): number {
+  if (typeof value !== "number" || !Number.isFinite(value)) return 0;
+  return Math.max(0, Math.min(1, value > 1 ? value / 100 : value));
 }

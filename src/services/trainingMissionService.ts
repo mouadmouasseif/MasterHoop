@@ -41,10 +41,11 @@ export type TrainingMissionReport = {
   completionRate: number;
   shotsAttempted: number;
   shotsMade: number;
-  shootingPercentage: number;
+  shootingPercentage: number | null;
   crossoversCompleted: number;
   stepBackCompleted: number;
-  aiScore: number;
+  aiScore: number | null;
+  confidenceScore: number;
   strengths: string[];
   weaknesses: string[];
   recommendations: string[];
@@ -206,9 +207,14 @@ export function buildTrainingMissionReport(
   const made = Number(metrics?.madeShots || 0);
   const missed = Number(metrics?.missedShots || 0);
   const attempted = made + missed;
-  const shootingPercentage = attempted ? Math.round((made / attempted) * 100) : 0;
+  const shootingPercentage = attempted ? Math.round((made / attempted) * 100) : null;
   const values = deriveValues(metrics, elapsedSeconds);
-  const aiScore = Math.min(99, Math.round((progress.completionRate * 0.55) + (shootingPercentage * 0.25) + (values.controlQuality * 0.2)));
+  const observedSignals = [metrics?.elbowAngle, metrics?.kneeAngle, metrics?.dribbleRhythm, metrics?.dribblePower]
+    .filter((value) => typeof value === "number" && Number.isFinite(value) && value > 0).length;
+  const confidenceScore = Math.min(100, attempted * 5 + observedSignals * 18);
+  const aiScore = confidenceScore >= 60 && shootingPercentage !== null
+    ? Math.min(99, Math.round((progress.completionRate * 0.6) + (shootingPercentage * 0.4)))
+    : null;
 
   return {
     trainingName: progress.trainingName,
@@ -220,6 +226,7 @@ export function buildTrainingMissionReport(
     crossoversCompleted: Math.round(values.crossovers),
     stepBackCompleted: Math.round(values.stepBacks),
     aiScore,
+    confidenceScore,
     strengths: buildStrengths(metrics, progress.completionRate),
     weaknesses: buildWeaknesses(metrics, progress.completionRate),
     recommendations: buildRecommendations(missionId, progress.completionRate),
@@ -233,19 +240,23 @@ function deriveValues(metrics: Partial<PoseMetrics> | null | undefined, elapsedS
   const missed = Number(metrics?.missedShots || 0);
   const attempts = made + missed;
   const threes = metrics?.shots?.filter((shot) => shot.shotType === "Three Pointer").length || 0;
-  const madeThrees = metrics?.shots?.filter((shot) => shot.shotType === "Three Pointer" && shot.outcome === "made").length || Math.round(made * 0.35);
-  const madeTwos = Math.max(0, made - madeThrees);
+  const madeThrees = metrics?.shots?.filter((shot) => shot.shotType === "Three Pointer" && shot.outcome === "made").length || 0;
+  const madeTwos = metrics?.shots?.filter((shot) => shot.shotType === "Two Pointer" && shot.outcome === "made").length || 0;
   const crossovers = Math.max(Number(metrics?.dribbleCount || 0), metrics?.isCrossover ? 1 : 0);
-  const stepBacks = Number(metrics?.isFadeaway ? 1 : 0) + Math.floor(attempts * 0.25);
-  const shootingScore = Math.min(99, Math.round(((metrics?.elbowAngle || 72) + Math.max(0, 180 - (metrics?.kneeAngle || 72))) / 2));
-  const speedScore = Math.min(99, Math.round(65 + Math.min(Number(metrics?.dribbleRhythm || 0), 180) / 6));
-  const controlQuality = Math.min(99, Math.round(62 + Math.min(Number(metrics?.dribblePower || 0), 90) * 0.25 + Math.min(crossovers, 40) * 0.25));
+  const stepBacks = Number(metrics?.isFadeaway ? 1 : 0);
+  const shootingScore = metrics?.elbowAngle && metrics?.kneeAngle
+    ? Math.min(99, Math.round((metrics.elbowAngle + Math.max(0, 180 - metrics.kneeAngle)) / 2))
+    : 0;
+  const speedScore = metrics?.dribbleRhythm ? Math.min(99, Math.round(metrics.dribbleRhythm / 2)) : 0;
+  const controlQuality = metrics?.dribblePower
+    ? Math.min(99, Math.round(metrics.dribblePower * 0.75 + Math.min(crossovers, 40) * 0.25))
+    : 0;
   const finishRate = attempts ? Math.round((made / attempts) * 100) : 0;
 
   return {
-    closeShots: Math.min(attempts, 20),
-    midRangeShots: Math.max(0, attempts - 20) || Math.min(attempts, 50),
-    releasePause: Math.floor(attempts / 2),
+    closeShots: metrics?.shots?.filter((shot) => shot.shotType === "Close Range").length || 0,
+    midRangeShots: metrics?.shots?.filter((shot) => shot.shotType === "Mid Range").length || 0,
+    releasePause: 0,
     madeShots: made,
     twoPointMakes: madeTwos,
     threePointMakes: madeThrees,
@@ -254,19 +265,19 @@ function deriveValues(metrics: Partial<PoseMetrics> | null | undefined, elapsedS
     series30: Math.floor(elapsedSeconds / 30),
     crossovers,
     controlQuality,
-    comboSeries: Math.floor(crossovers / 3),
-    accelerations: Math.floor(speedScore / 10),
+    comboSeries: 0,
+    accelerations: 0,
     finishes: made,
-    driveSeries: Math.floor(crossovers / 4),
-    driveQuality: controlQuality,
+    driveSeries: 0,
+    driveQuality: 0,
     finishRate,
     stepBacks,
-    balancePause: Math.floor(attempts / 2),
+    balancePause: 0,
     shotQuality: shootingScore,
-    stepBackDistance: Math.min(99, 55 + stepBacks * 8),
-    stability: Math.min(99, 100 - Math.abs(72 - Number(metrics?.kneeAngle || 72))),
-    stepBackShots: attempts,
-    leftRightMix: Math.floor(stepBacks * 2),
+    stepBackDistance: 0,
+    stability: metrics?.kneeAngle ? Math.min(99, 100 - Math.abs(72 - metrics.kneeAngle)) : 0,
+    stepBackShots: metrics?.shots?.filter((shot) => shot.shotType === "Step Back").length || 0,
+    leftRightMix: 0,
     crossoverStepBack: Math.min(crossovers, stepBacks),
   };
 }
@@ -275,9 +286,9 @@ function chooseVoiceCue(missionId: TrainingMissionId, metrics: Partial<PoseMetri
   if (metrics?.madeShots && metrics.madeShots > 0) return "Excellent tir";
   if (metrics?.isCrossover) return "Acceleration efficace";
   if (missionId === "step-back-mastery" && (metrics?.isFadeaway || metrics?.isShooting)) return "Tres bon step-back";
-  if (Number(metrics?.kneeAngle || 72) < 55) return "Pense a garder ton equilibre";
+  if (metrics?.kneeAngle && metrics.kneeAngle < 55) return "Pense a garder ton equilibre";
   if (Number(metrics?.dribbleRhythm || 0) > 155) return "Relachement trop rapide";
-  if (completionRate > 80) return "MasterHoop Elite en approche";
+  if (completionRate > 80) return "BasketMotion-Ai Elite en approche";
   return "Continue, garde le rythme";
 }
 
@@ -287,23 +298,23 @@ function unlockBadges(missionId: TrainingMissionId, values: Record<string, numbe
   if (values.midRangeShots >= 30) badges.push("🔥 Mid-Range Killer");
   if (values.crossovers >= 40) badges.push("⚡ Crossover King");
   if (missionId === "step-back-mastery" && values.stepBacks >= 20) badges.push("👑 Step-Back Master");
-  if (completionRate >= 95) badges.push("🏀 MasterHoop Elite");
+  if (completionRate >= 95) badges.push("🏀 BasketMotion-Ai Elite");
   return badges;
 }
 
 function buildStrengths(metrics: Partial<PoseMetrics> | null | undefined, completionRate: number) {
   return [
-    completionRate >= 70 ? "Progression solide sur les objectifs de mission" : "Bonne base de travail detectee",
-    Number(metrics?.elbowAngle || 72) >= 70 ? "Angle de tir exploitable" : "Effort visible sur la mecanique de tir",
-    Number(metrics?.dribblePower || 0) >= 60 ? "Controle de balle dynamique" : "Rythme stable pendant les repetitions",
+    ...(completionRate >= 70 ? ["Progression solide sur les objectifs observés"] : []),
+    ...(metrics?.elbowAngle && metrics.elbowAngle >= 70 ? ["Angle du coude exploitable sur les images observées"] : []),
+    ...(metrics?.dribblePower && metrics.dribblePower >= 60 ? ["Signal de contrôle de balle dynamique"] : []),
   ];
 }
 
 function buildWeaknesses(metrics: Partial<PoseMetrics> | null | undefined, completionRate: number) {
   return [
-    completionRate < 70 ? "Volume de repetitions encore insuffisant" : "Finir la mission avec plus de regularite",
-    Number(metrics?.kneeAngle || 72) < 58 ? "Equilibre bas du corps a stabiliser" : "Maintenir la pause au release plus longtemps",
-    Number(metrics?.dribbleRhythm || 0) > 155 ? "Execution parfois trop rapide" : "Acceleration a rendre plus explosive",
+    ...(completionRate < 70 ? ["Objectifs observables encore incomplets"] : []),
+    ...(metrics?.kneeAngle && metrics.kneeAngle < 58 ? ["Flexion basse à vérifier sur une nouvelle capture"] : []),
+    ...(metrics?.dribbleRhythm && metrics.dribbleRhythm > 155 ? ["Rythme rapide observé, à confirmer"] : []),
   ];
 }
 

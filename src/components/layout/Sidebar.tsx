@@ -17,7 +17,7 @@ import React from "react";
 import { useState } from "react";
 
 import { cn } from "@/src/lib/utils";
-import masterHoopLogo from "@/src/assets/master-hoop-logo.png";
+import BasketMotion-AiLogo from "@/src/assets/basketmotion-logo.png";
 import type { ActiveTab } from "@/src/types";
 import NavButton from "@/src/components/ui/NavButton";
 
@@ -61,8 +61,8 @@ export default function Sidebar({
       {/* LOGO */}
       <div className="hidden md:flex mb-10">
         <img
-          src={masterHoopLogo}
-          alt="Master Hoop"
+          src={BasketMotion-AiLogo}
+          alt="Basket Motion"
           className="h-11 w-11 rounded-xl object-cover ring-1 ring-white/10 shadow-lg shadow-brand-orange/30"
         />
       </div>

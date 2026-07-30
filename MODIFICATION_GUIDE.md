@@ -1,4 +1,4 @@
-# Schéma de modification de MasterHoop
+# Schéma de modification de BasketMotion-Ai
 
 Ce document doit être suivi avant toute correction, évolution ou refactorisation du projet.
 L’objectif est de préserver la stabilité de la plateforme, la sécurité des données et la

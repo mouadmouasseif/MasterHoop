@@ -20,15 +20,15 @@ export default function ProfilePage({
   const social = user ? profileToSocialPlayer(profile, user) : null;
   const made = analyses.reduce((sum, item) => sum + item.madeShots, 0);
   const missed = analyses.reduce((sum, item) => sum + item.missedShots, 0);
-  const accuracy = Math.round((made / Math.max(1, made + missed)) * 100);
+  const accuracy = made + missed > 0 ? Math.round((made / (made + missed)) * 100) : null;
   const chartData = analyses.length
     ? analyses.slice(0, 8).reverse().map((item, index) => ({ game: `S${index + 1}`, performance: item.score }))
-    : [{ game: "S1", performance: 72 }, { game: "S2", performance: 78 }, { game: "S3", performance: 84 }];
+    : [];
   const exportData = { user: user ? { uid: user.uid, email: user.email, displayName: user.displayName } : null, profile, social, sessions, analyses };
 
   const shareProfile = async () => {
     const url = `${window.location.origin}/player/${social?.uniquePlayerId || "MH-000000"}`;
-    if (navigator.share) await navigator.share({ title: "MasterHoop Profile", text: social?.fullName, url }).catch(() => undefined);
+    if (navigator.share) await navigator.share({ title: "BasketMotion-Ai Profile", text: social?.fullName, url }).catch(() => undefined);
     else await navigator.clipboard?.writeText(url);
   };
 
@@ -42,7 +42,7 @@ export default function ProfilePage({
             </div>
             <div>
               <div className="text-xs font-black uppercase tracking-[0.24em] text-brand-orange">Profil joueur avance</div>
-              <h2 className="text-3xl font-black">{social?.fullName || "Joueur MasterHoop"}</h2>
+              <h2 className="text-3xl font-black">{social?.fullName || "Joueur BasketMotion-Ai"}</h2>
               <p className="text-sm text-white/45">@{social?.username || "player"} - {social?.email || "Compte local"}</p>
               <div className="mt-3 flex flex-wrap gap-2">
                 <Badge label={social?.uniquePlayerId || "MH-000000"} />
@@ -69,16 +69,16 @@ export default function ProfilePage({
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-5">
         <Info label="Saison" value="2026" />
         <Info label="Matchs joues" value={`${sessions.length + analyses.length}`} />
-        <Info label="Victoires" value={`${Math.max(1, Math.round(analyses.length * 0.62))}`} />
-        <Info label="Defaites" value={`${Math.max(0, Math.round(analyses.length * 0.38))}`} />
-        <Info label="% reussite" value={`${accuracy}%`} />
+        <Info label="Tirs annotés réussis" value={`${made}`} />
+        <Info label="Tirs annotés manqués" value={`${missed}`} />
+        <Info label="% annoté" value={accuracy === null ? "—" : `${accuracy}%`} />
       </div>
 
       <div className="grid gap-6 xl:grid-cols-[0.75fr_1.25fr]">
         <div className="glass-card p-6">
           <div className="mb-4 flex items-center gap-2 text-xl font-black uppercase"><QrCode className="text-brand-orange" /> QR personnel</div>
           <div className="rounded-2xl bg-white p-5 text-center text-sm font-black text-black">
-            {social?.qrCode || "masterhoop://player/MH-000000"}
+            {social?.qrCode || "BasketMotion-Ai://player/MH-000000"}
           </div>
           <p className="mt-3 text-sm text-white/50">A scanner pour ajouter automatiquement ce joueur comme ami ou membre d'equipe.</p>
         </div>
@@ -86,14 +86,14 @@ export default function ProfilePage({
         <div className="glass-card p-6">
           <h3 className="mb-5 text-xl font-black uppercase">Dashboard joueur</h3>
           <div className="h-[280px]">
-            <ResponsiveContainer width="100%" height="100%">
+            {chartData.length === 0 ? <div className="flex h-full items-center justify-center text-sm text-white/40">Aucune analyse fiable à tracer.</div> : <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={chartData}>
                 <XAxis dataKey="game" stroke="#ffffff50" fontSize={11} />
                 <YAxis stroke="#ffffff50" fontSize={11} domain={[0, 100]} />
                 <Tooltip contentStyle={{ backgroundColor: "#161617", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 12 }} />
                 <Area type="monotone" dataKey="performance" stroke="#FF6B00" fill="#FF6B00" fillOpacity={0.22} strokeWidth={3} />
               </AreaChart>
-            </ResponsiveContainer>
+            </ResponsiveContainer>}
           </div>
         </div>
       </div>

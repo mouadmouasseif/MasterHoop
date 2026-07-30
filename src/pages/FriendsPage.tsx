@@ -45,7 +45,7 @@ export default function FriendsPage({ user, profile }: { user: FirebaseUser | nu
   };
 
   const addByQr = async (value = qrValue) => {
-    const id = value.replace("masterhoop://player/", "").trim();
+    const id = value.replace("BasketMotion-Ai://player/", "").trim();
     setQuery(id);
     const [match] = await searchPlayers(id);
     if (match) await addFriend(match);
@@ -99,7 +99,7 @@ export default function FriendsPage({ user, profile }: { user: FirebaseUser | nu
           <div className="glass-card p-6">
             <div className="mb-4 flex items-center gap-2 text-sm font-black uppercase text-brand-orange"><QrCode size={18} /> QR Code</div>
             <div className="rounded-2xl border border-white/10 bg-white p-4 text-center text-xs font-black text-black">
-              {me?.qrCode || "masterhoop://player/MH-000000"}
+              {me?.qrCode || "BasketMotion-Ai://player/MH-000000"}
             </div>
             <input value={qrValue} onChange={(event) => setQrValue(event.target.value)} placeholder="Coller QR / Player ID scanne" className="mt-4 w-full rounded-xl border border-white/10 bg-black/25 px-4 py-3 text-sm outline-none" />
             <div className="mt-3 flex gap-2">

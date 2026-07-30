@@ -1,5 +1,5 @@
 import { Maximize2, Pause, Play, SkipBack, SkipForward } from "lucide-react";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { TrainingSession } from "@/src/services/sessionService";
 
 export default function SessionPlayer({ session }: { session: TrainingSession }) {
@@ -7,6 +7,29 @@ export default function SessionPlayer({ session }: { session: TrainingSession })
   const [playing, setPlaying] = useState(false);
   const [speed, setSpeed] = useState(1);
   const [progress, setProgress] = useState(0);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [videoViewport, setVideoViewport] = useState({ left: 0, top: 0, width: 100, height: 100 });
+  const observedBall = session.shotAnalysis?.trajectory.points.reduce<
+    (typeof session.shotAnalysis.trajectory.points)[number] | null
+  >((nearest, point) => {
+    if (!nearest) return point;
+    return Math.abs(point.timestampMs / 1000 - currentTime) < Math.abs(nearest.timestampMs / 1000 - currentTime)
+      ? point
+      : nearest;
+  }, null);
+  const visibleBall = observedBall && Math.abs(observedBall.timestampMs / 1000 - currentTime) <= 0.25
+    ? observedBall
+    : null;
+
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video || typeof ResizeObserver === "undefined") return undefined;
+    const update = () => setVideoViewport(containedVideoViewport(video));
+    const observer = new ResizeObserver(update);
+    observer.observe(video);
+    update();
+    return () => observer.disconnect();
+  }, [session.videoUrl]);
 
   const togglePlay = async () => {
     const video = videoRef.current;
@@ -26,6 +49,7 @@ export default function SessionPlayer({ session }: { session: TrainingSession })
     video.pause();
     setPlaying(false);
     video.currentTime = Math.max(0, video.currentTime + direction / 30);
+    setCurrentTime(video.currentTime);
   };
 
   const toggleFullscreen = async () => {
@@ -53,18 +77,26 @@ export default function SessionPlayer({ session }: { session: TrainingSession })
           poster={session.thumbnailUrl}
           playsInline
           className="h-full w-full object-contain"
+          onLoadedMetadata={(event) => setVideoViewport(containedVideoViewport(event.currentTarget))}
           onTimeUpdate={(event) => {
             const video = event.currentTarget;
+            setCurrentTime(video.currentTime);
             setProgress(video.duration ? (video.currentTime / video.duration) * 100 : 0);
           }}
           onEnded={() => setPlaying(false)}
         />
         <div className="pointer-events-none absolute inset-0">
-          <div className="absolute left-[46%] top-[18%] h-3 w-3 rounded-full bg-brand-neon shadow-[0_0_20px_rgba(0,255,148,.85)]" />
-          <div className="absolute left-[48%] top-[24%] h-[24%] w-px bg-brand-neon/60" />
-          <div className="absolute left-[43%] top-[32%] h-px w-[10%] bg-brand-orange/70" />
+          {visibleBall && (
+            <div
+              className="absolute h-4 w-4 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-white bg-brand-orange/70 shadow-[0_0_20px_rgba(255,107,0,.8)]"
+              style={{
+                left: `${videoViewport.left + visibleBall.x * videoViewport.width}%`,
+                top: `${videoViewport.top + visibleBall.y * videoViewport.height}%`,
+              }}
+            />
+          )}
           <div className="absolute bottom-4 left-4 rounded-xl border border-white/10 bg-black/55 px-3 py-2 text-[10px] font-black uppercase tracking-widest text-white/60 backdrop-blur">
-            AI overlay: posture, joints, trajectory
+            {visibleBall ? "Ballon réellement observé" : "Aucune superposition observée à cet instant"}
           </div>
         </div>
       </div>
@@ -79,6 +111,7 @@ export default function SessionPlayer({ session }: { session: TrainingSession })
           if (!video || !video.duration) return;
           const next = Number(event.target.value);
           video.currentTime = (next / 100) * video.duration;
+          setCurrentTime(video.currentTime);
           setProgress(next);
         }}
         className="h-1 w-full accent-brand-orange"
@@ -86,16 +119,16 @@ export default function SessionPlayer({ session }: { session: TrainingSession })
 
       <div className="flex flex-wrap items-center justify-between gap-3 p-3">
         <div className="flex items-center gap-2">
-          <button onClick={togglePlay} className="rounded-xl bg-white px-3 py-2 text-black">
+          <button onClick={togglePlay} className="rounded-xl bg-white px-3 py-2 text-black" aria-label={playing ? "Mettre en pause" : "Lire"}>
             {playing ? <Pause size={18} /> : <Play size={18} />}
           </button>
-          <button onClick={() => stepFrame(-1)} className="rounded-xl border border-white/10 p-2 text-white/70 hover:bg-white/10" title="Previous frame">
+          <button onClick={() => stepFrame(-1)} className="rounded-xl border border-white/10 p-2 text-white/70 hover:bg-white/10" title="Image précédente">
             <SkipBack size={17} />
           </button>
-          <button onClick={() => stepFrame(1)} className="rounded-xl border border-white/10 p-2 text-white/70 hover:bg-white/10" title="Next frame">
+          <button onClick={() => stepFrame(1)} className="rounded-xl border border-white/10 p-2 text-white/70 hover:bg-white/10" title="Image suivante">
             <SkipForward size={17} />
           </button>
-          <button onClick={toggleFullscreen} className="rounded-xl border border-white/10 p-2 text-white/70 hover:bg-white/10" title="Fullscreen">
+          <button onClick={toggleFullscreen} className="rounded-xl border border-white/10 p-2 text-white/70 hover:bg-white/10" title="Plein écran">
             <Maximize2 size={17} />
           </button>
         </div>
@@ -111,6 +144,57 @@ export default function SessionPlayer({ session }: { session: TrainingSession })
           ))}
         </div>
       </div>
+
+      {session.shotAnalysis && (
+        <div className="border-t border-white/10 p-3">
+          <div className="mb-2 text-[10px] font-black uppercase tracking-widest text-white/40">Timeline du tir</div>
+          {session.shotAnalysis.timeline.length ? (
+            <div className="flex flex-wrap gap-2">
+              {session.shotAnalysis.timeline.map((event) => (
+                <button
+                  key={event.id}
+                  onClick={() => {
+                    if (!videoRef.current) return;
+                    videoRef.current.currentTime = event.timestampMs / 1000;
+                    setCurrentTime(event.timestampMs / 1000);
+                  }}
+                  className="rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-xs text-white/65 hover:border-brand-orange/50"
+                  title={event.evidence.join(" ")}
+                >
+                  {phaseLabel(event.phase)}
+                  <span className="ml-2 text-white/35">{(event.timestampMs / 1000).toFixed(2)} s</span>
+                </button>
+              ))}
+            </div>
+          ) : (
+            <p className="text-xs text-white/40">Aucune phase n’a atteint le seuil de confiance.</p>
+          )}
+        </div>
+      )}
     </div>
   );
+}
+
+function containedVideoViewport(video: HTMLVideoElement) {
+  const containerRatio = video.clientWidth / Math.max(1, video.clientHeight);
+  const mediaRatio = video.videoWidth / Math.max(1, video.videoHeight);
+  if (!Number.isFinite(mediaRatio) || mediaRatio <= 0) return { left: 0, top: 0, width: 100, height: 100 };
+  if (mediaRatio > containerRatio) {
+    const height = (containerRatio / mediaRatio) * 100;
+    return { left: 0, top: (100 - height) / 2, width: 100, height };
+  }
+  const width = (mediaRatio / containerRatio) * 100;
+  return { left: (100 - width) / 2, top: 0, width, height: 100 };
+}
+
+function phaseLabel(phase: NonNullable<TrainingSession["shotAnalysis"]>["timeline"][number]["phase"]) {
+  return ({
+    preparation: "Préparation",
+    dip: "Descente",
+    upward_motion: "Montée",
+    release: "Relâchement",
+    flight: "Vol",
+    result: "Résultat",
+    landing: "Atterrissage",
+  })[phase];
 }

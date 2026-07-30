@@ -3,7 +3,7 @@ import { signOut, type User as FirebaseUser } from "firebase/auth";
 import { cn } from "@/src/lib/utils";
 import { auth } from "@/src/lib/firebase";
 import type { ActiveTab, UserProfile } from "@/src/types";
-import masterHoopLogo from "@/src/assets/master-hoop-logo.png";
+import BasketMotion-AiLogo from "@/src/assets/basketmotion-logo.png";
 
 type Props = {
   isImmersive: boolean;
@@ -44,12 +44,12 @@ export default function Navbar({
       {/* LOGO */}
       <div className="flex items-center gap-3">
         <img
-          src={masterHoopLogo}
-          alt="Master Hoop logo"
+          src={BasketMotion-AiLogo}
+          alt="Basket Motion logo"
           className="h-12 w-12 rounded-xl object-cover ring-1 ring-white/10"
         />
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Master Hoop</h1>
+          <h1 className="text-3xl font-bold tracking-tight">Basket Motion</h1>
           <p className="text-white/40 text-sm mt-1">
             Analyse de performance basketball en temps réel
           </p>

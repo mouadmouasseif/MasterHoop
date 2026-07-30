@@ -54,6 +54,7 @@ export default function VideoUploadAnalyzer({
         strengths: result.strengths,
         weaknesses: result.weaknesses,
         recommendations: result.suggestions,
+        shotAnalysis: result.shotAnalysis,
       });
       saveLocalAnalysis(analysis);
       setStatus(

@@ -1,5 +1,5 @@
 import { motion } from "motion/react";
-import masterHoopLogo from "@/src/assets/master-hoop-logo.png";
+import BasketMotion-AiLogo from "@/src/assets/basketmotion-logo.png";
 
 export default function SplashScreen() {
   return (
@@ -11,14 +11,14 @@ export default function SplashScreen() {
         className="flex flex-col items-center gap-5"
       >
         <motion.img
-          src={masterHoopLogo}
-          alt="MasterHoop"
+          src={BasketMotion-AiLogo}
+          alt="BasketMotion-Ai"
           className="h-24 w-24 rounded-3xl object-cover shadow-2xl shadow-brand-orange/25"
           animate={{ rotate: [0, -4, 4, 0] }}
           transition={{ repeat: Infinity, duration: 2.2 }}
         />
         <div className="text-center">
-          <div className="text-2xl font-black uppercase tracking-widest">MasterHoop</div>
+          <div className="text-2xl font-black uppercase tracking-widest">BasketMotion-Ai</div>
           <div className="mt-2 text-xs font-black uppercase tracking-[0.28em] text-brand-orange">AI Basketball Training</div>
         </div>
         <div className="h-1 w-44 overflow-hidden rounded-full bg-white/10">

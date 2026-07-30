@@ -56,7 +56,7 @@ export default function TeamsPage({ user, profile }: { user: FirebaseUser | null
   };
 
   const addPlayer = useCallback(async (value = inviteQuery) => {
-    const clean = value.replace("masterhoop://player/", "").trim();
+    const clean = value.replace("BasketMotion-Ai://player/", "").trim();
     if (!clean) return;
 
     const friend = friends.find((player) =>

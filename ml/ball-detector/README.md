@@ -1,4 +1,4 @@
-# Détecteur de ballon MasterHoop
+# Détecteur de ballon BasketMotion-Ai
 
 Ce dossier contient la chaîne reproductible de préparation, entraînement, export et
 évaluation du modèle spécialisé. Les vidéos, images, annotations, poids et exports
@@ -115,8 +115,23 @@ Puis exécuter :
 
 ```text
 python evaluate_predictions.py \
-  --specialized predictions-masterhoop.json \
-  --coco predictions-coco.json
+  --specialized predictions-BasketMotion-Ai.json \
+  --coco predictions-coco.json \
+  --specialized-metadata metadata-BasketMotion-Ai.json \
+  --conditions conditions.json
+```
+
+Le rapport est écrit dans `outputs/evaluation-report.json`. Il inclut précision,
+rappel, F1, mAP@0.50, faux positifs, taux par condition, temps d’inférence et poids.
+`configs/baseline.json` bloque le déploiement avec le code 2 si le modèle spécialisé
+ne dépasse pas COCO-SSD ou dépasse les limites mobiles.
+
+## Tests légers
+
+Depuis `ml/ball-detector` :
+
+```text
+python -m unittest discover tests
 ```
 
 Le rapport compare précision, rappel et F1 au même seuil de confiance et au même IoU.

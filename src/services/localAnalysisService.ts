@@ -15,6 +15,7 @@ export type LocalAnalysis = {
   weaknesses: string[];
   recommendations: string[];
   notes?: string;
+  shotAnalysis?: import("@/src/ai/types").ShotSequenceAnalysis;
 };
 
 export type MeasuredLocalAnalysisInput = {
@@ -30,9 +31,10 @@ export type MeasuredLocalAnalysisInput = {
   strengths: string[];
   weaknesses: string[];
   recommendations: string[];
+  shotAnalysis?: import("@/src/ai/types").ShotSequenceAnalysis;
 };
 
-const STORAGE_KEY = 'masterHoopAnalyses';
+const STORAGE_KEY = 'BasketMotion-AiAnalyses';
 
 export function getLocalAnalyses(): LocalAnalysis[] {
   if (typeof window === 'undefined') return [];
@@ -66,6 +68,7 @@ export function createMeasuredVideoAnalysis(input: MeasuredLocalAnalysisInput): 
     strengths: input.strengths,
     weaknesses: input.weaknesses,
     recommendations: input.recommendations,
+    shotAnalysis: input.shotAnalysis,
   };
 }
 

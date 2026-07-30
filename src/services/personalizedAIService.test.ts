@@ -26,7 +26,7 @@ describe("personalizedAIService", () => {
       isShooting: true,
     });
 
-    expect(result.engine).toBe("masterhoop-local-v1");
+    expect(result.engine).toBe("BasketMotion-Ai-local-v1");
     expect(result.score).toBeGreaterThan(0);
     expect(result.confidenceScore).toBeGreaterThanOrEqual(60);
     expect(result.metricConfidence.shootingForm.measured).toBe(true);

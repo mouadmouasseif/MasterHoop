@@ -3,7 +3,7 @@ import { Camera, X } from "lucide-react";
 
 export default function QrScanner({ onScan }: { onScan: (value: string) => void }) {
   const reactId = useId().replace(/:/g, "");
-  const scannerId = `masterhoop-qr-${reactId}`;
+  const scannerId = `BasketMotion-Ai-qr-${reactId}`;
   const [open, setOpen] = useState(false);
   const [error, setError] = useState("");
 
@@ -63,8 +63,8 @@ export default function QrScanner({ onScan }: { onScan: (value: string) => void 
           <div className="w-full max-w-md rounded-2xl border border-white/10 bg-brand-surface p-5 shadow-2xl">
             <div className="mb-4 flex items-center justify-between">
               <div>
-                <div className="text-sm font-black uppercase text-brand-orange">Scanner QR MasterHoop</div>
-                <div className="text-xs text-white/45">masterhoop://player/MH-xxxxxx</div>
+                <div className="text-sm font-black uppercase text-brand-orange">Scanner QR BasketMotion-Ai</div>
+                <div className="text-xs text-white/45">BasketMotion-Ai://player/MH-xxxxxx</div>
               </div>
               <button onClick={() => setOpen(false)} className="rounded-xl border border-white/10 p-2 text-white/70">
                 <X size={18} />

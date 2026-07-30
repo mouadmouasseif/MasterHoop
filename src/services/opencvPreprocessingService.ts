@@ -32,7 +32,7 @@ export class OpenCVFramePreprocessor {
     }
     this.worker = new Worker(
       new URL("../workers/opencvPreprocessing.worker.ts", import.meta.url),
-      { type: "module", name: "masterhoop-opencv" },
+      { type: "module", name: "BasketMotion-Ai-opencv" },
     );
     this.worker.onmessage = (event: MessageEvent<OpenCVWorkerResponse>) => {
       const response = event.data;

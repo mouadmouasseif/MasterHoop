@@ -13,8 +13,8 @@ export default defineConfig(() => {
         registerType: 'autoUpdate',
         includeAssets: ['icons/icon-192.png', 'icons/icon-512.png'],
         manifest: {
-          name: 'MasterHoop AI Basketball Training',
-          short_name: 'MasterHoop',
+          name: 'BasketMotion-Ai AI Basketball Training',
+          short_name: 'BasketMotion-Ai',
           description: 'AI basketball coaching, live training, upload analysis, and session replay.',
           start_url: '/',
           scope: '/',
@@ -49,14 +49,6 @@ export default defineConfig(() => {
               options: {
                 cacheName: 'master-hoop-opencv-runtime',
                 expiration: { maxEntries: 1, maxAgeSeconds: 60 * 60 * 24 * 30 },
-              },
-            },
-            {
-              urlPattern: /^https:\/\/firebasestorage\.googleapis\.com\/.*/i,
-              handler: 'NetworkFirst',
-              options: {
-                cacheName: 'master-hoop-private-video-runtime',
-                expiration: { maxEntries: 20, maxAgeSeconds: 60 * 60 * 24 },
               },
             },
           ],
