@@ -2,7 +2,7 @@ import { motion } from 'motion/react';
 import { Settings } from 'lucide-react';
 import type { User as FirebaseUser } from 'firebase/auth';
 import type { UserProfile } from '@/src/types';
-import BasketMotion-AiLogo from '@/src/assets/basketmotion-logo.png';
+import basketMotionAiLogo from '@/src/assets/basketmotion-logo.png';
 
 const positions = [
   { id: 1, abbr: 'PG', name: 'Meneur' },
@@ -43,7 +43,7 @@ export default function CompleteProfile({
         </div>
         <div className="relative z-10">
           <div className="mb-6 flex items-center gap-4">
-            <img src={BasketMotion-AiLogo} alt="Basket Motion logo" className="h-16 w-16 rounded-2xl object-cover ring-1 ring-white/10" />
+            <img src={basketMotionAiLogo} alt="Basket Motion logo" className="h-16 w-16 rounded-2xl object-cover ring-1 ring-white/10" />
             <div>
               <h2 className="text-2xl font-black uppercase tracking-wide">Bienvenue sur Basket Motion</h2>
               <p className="text-sm text-white/40">Complete ton profil pour calibrer l'analyse IA.</p>

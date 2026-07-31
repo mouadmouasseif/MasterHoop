@@ -1,5 +1,5 @@
 import { motion } from "motion/react";
-import BasketMotion-AiLogo from "@/src/assets/basketmotion-logo.png";
+import basketMotionAiLogo from "@/src/assets/basketmotion-logo.png";
 
 export default function SplashScreen() {
   return (
@@ -11,7 +11,7 @@ export default function SplashScreen() {
         className="flex flex-col items-center gap-5"
       >
         <motion.img
-          src={BasketMotion-AiLogo}
+          src={basketMotionAiLogo}
           alt="BasketMotion-Ai"
           className="h-24 w-24 rounded-3xl object-cover shadow-2xl shadow-brand-orange/25"
           animate={{ rotate: [0, -4, 4, 0] }}

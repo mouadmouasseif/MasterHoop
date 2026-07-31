@@ -1,6 +1,6 @@
 import { Activity, ArrowRight, Brain, Camera, CheckCircle2, Dumbbell, LineChart, Lock, Play, Shield, Sparkles, Target, UserRound } from 'lucide-react';
 import Footer from '@/src/components/layout/Footer';
-import BasketMotion-AiLogo from '@/src/assets/basketmotion-logo.png';
+import basketMotionAiLogo from '@/src/assets/basketmotion-logo.png';
 
 const architecture = [
   { title: 'AUTH', icon: Lock, items: ['Login Google', 'First setup profile', 'Save user data'] },
@@ -40,7 +40,7 @@ export default function LandingPage({
       <header className="sticky top-0 z-40 border-b border-white/10 bg-brand-dark/80 backdrop-blur-xl">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3 md:px-8">
           <div className="flex items-center gap-3">
-            <img src={BasketMotion-AiLogo} alt="Basket Motion logo" className="h-12 w-12 rounded-xl object-cover ring-1 ring-white/10" />
+            <img src={basketMotionAiLogo} alt="Basket Motion logo" className="h-12 w-12 rounded-xl object-cover ring-1 ring-white/10" />
             <div>
               <div className="text-sm font-black uppercase tracking-widest">Basket Motion</div>
               <div className="text-[10px] uppercase tracking-[0.24em] text-brand-orange">AI Basketball Training</div>
@@ -99,7 +99,7 @@ export default function LandingPage({
           </div>
 
           <div className="relative min-h-[420px] overflow-hidden rounded-3xl border border-white/10 bg-black/40 p-6 shadow-2xl">
-            <img src={BasketMotion-AiLogo} alt="Basket Motion basketball AI logo" className="absolute inset-0 h-full w-full object-cover opacity-35" />
+            <img src={basketMotionAiLogo} alt="Basket Motion basketball AI logo" className="absolute inset-0 h-full w-full object-cover opacity-35" />
             <div className="absolute inset-0 bg-gradient-to-t from-brand-dark via-brand-dark/65 to-transparent" />
             <div className="relative z-10 flex h-full flex-col justify-end gap-5 pt-56">
               <div className="mb-1 text-[10px] font-black uppercase tracking-[0.2em] text-white/45">Aperçu illustratif · données de démonstration</div>

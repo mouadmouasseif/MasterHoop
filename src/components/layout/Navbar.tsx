@@ -3,7 +3,7 @@ import { signOut, type User as FirebaseUser } from "firebase/auth";
 import { cn } from "@/src/lib/utils";
 import { auth } from "@/src/lib/firebase";
 import type { ActiveTab, UserProfile } from "@/src/types";
-import BasketMotion-AiLogo from "@/src/assets/basketmotion-logo.png";
+import basketMotionAiLogo from "@/src/assets/basketmotion-logo.png";
 
 type Props = {
   isImmersive: boolean;
@@ -44,7 +44,7 @@ export default function Navbar({
       {/* LOGO */}
       <div className="flex items-center gap-3">
         <img
-          src={BasketMotion-AiLogo}
+          src={basketMotionAiLogo}
           alt="Basket Motion logo"
           className="h-12 w-12 rounded-xl object-cover ring-1 ring-white/10"
         />
