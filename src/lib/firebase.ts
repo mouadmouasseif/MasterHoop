@@ -16,6 +16,7 @@ const fallbackFirebaseConfig = {
   messagingSenderId: "2544230303",
   appId: "1:2544230303:web:f6f45f628db48d23a6a7aa",
   measurementId: "",
+  firestoreDatabaseId: "ai-studio-de4edd6d-b6c6-41f5-9666-8ecf6529c1d0",
 };
 
 const env = import.meta.env;
@@ -40,6 +41,8 @@ const firebaseConfig = {
   appId: getEnvValue("appId"),
 
   measurementId: getEnvValue("measurementId"),
+
+  firestoreDatabaseId: getEnvValue("firestoreDatabaseId"),
 };
 
 const missingFirebaseKeys = Object.entries(firebaseConfig)
@@ -70,7 +73,9 @@ if (typeof window !== "undefined") {
 
 // Exports
 export const auth = getAuth(app);
-export const db = getFirestore(app);
+export const db = firebaseConfig.firestoreDatabaseId
+  ? getFirestore(app, firebaseConfig.firestoreDatabaseId)
+  : getFirestore(app);
 export const storage = getStorage(app);
 
 // IMPORTANT: exports needed by App.tsx
