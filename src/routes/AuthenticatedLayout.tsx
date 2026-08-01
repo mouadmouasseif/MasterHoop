@@ -16,6 +16,19 @@ import { AppShellContext, type AppShellState } from "@/src/routes/AppShellContex
 import { TAB_PATHS, tabForPath } from "@/src/routes/paths";
 import type { ActiveTab, UserProfile } from "@/src/types";
 
+const withTimeout = async <T,>(promise: Promise<T>, timeoutMs: number, message: string) => {
+  let timeoutId: number | undefined;
+  const timeout = new Promise<never>((_, reject) => {
+    timeoutId = window.setTimeout(() => reject(new Error(message)), timeoutMs);
+  });
+
+  try {
+    return await Promise.race([promise, timeout]);
+  } finally {
+    if (timeoutId !== undefined) window.clearTimeout(timeoutId);
+  }
+};
+
 export default function AuthenticatedLayout() {
   const { user, profile, profileExists, refreshProfile } = useAuthContext();
   const location = useLocation();
@@ -84,7 +97,7 @@ export default function AuthenticatedLayout() {
   const hasMobileSubnav = ["games", "friends", "teams", "leaderboard", "notifications"].includes(activeTab);
 
   const saveProfile = async (data: Partial<UserProfile>) => {
-    await setDoc(doc(db, "users", user.uid), {
+    await withTimeout(setDoc(doc(db, "users", user.uid), {
       userId: user.uid,
       email: user.email || "",
       displayName: data.name || user.displayName || "Joueur BasketMotion-Ai",
@@ -102,8 +115,8 @@ export default function AuthenticatedLayout() {
       preferredShot: profile.preferredShot,
       createdAt: profile.createdAt || serverTimestamp(),
       updatedAt: serverTimestamp(),
-    }, { merge: true });
-    await refreshProfile();
+    }, { merge: true }), 10000, "Firebase Firestore ne repond pas. Verifie que la base de donnees existe.");
+    await withTimeout(refreshProfile(), 10000, "Le profil a ete sauvegarde, mais son rechargement a pris trop longtemps.");
     setShowProfileModal(false);
   };
 
