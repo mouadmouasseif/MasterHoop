@@ -38,7 +38,7 @@ export default defineConfig(() => {
           ],
         },
         workbox: {
-          navigateFallback: '/',
+          navigateFallback: '/index.html',
           globPatterns: ['**/*.{js,css,html,png,svg,ico,webmanifest}'],
           globIgnores: ['**/opencv-*.js'],
           maximumFileSizeToCacheInBytes: 4 * 1024 * 1024,

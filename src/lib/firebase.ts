@@ -16,7 +16,6 @@ const fallbackFirebaseConfig = {
   messagingSenderId: "2544230303",
   appId: "1:2544230303:web:f6f45f628db48d23a6a7aa",
   measurementId: "",
-  firestoreDatabaseId: "ai-studio-de4edd6d-b6c6-41f5-9666-8ecf6529c1d0",
 };
 
 const env = import.meta.env;
@@ -42,11 +41,11 @@ const firebaseConfig = {
 
   measurementId: getEnvValue("measurementId"),
 
-  firestoreDatabaseId: getEnvValue("firestoreDatabaseId"),
+  firestoreDatabaseId: env.VITE_FIREBASE_FIRESTORE_DATABASE_ID?.trim() || "",
 };
 
 const missingFirebaseKeys = Object.entries(firebaseConfig)
-  .filter(([key, value]) => key !== "measurementId" && !value)
+  .filter(([key, value]) => key !== "measurementId" && key !== "firestoreDatabaseId" && !value)
   .map(([key]) => key);
 
 if (missingFirebaseKeys.length > 0) {
