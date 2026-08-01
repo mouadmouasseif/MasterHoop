@@ -8,21 +8,38 @@ import { getFirestore } from "firebase/firestore";
 import { getStorage } from "firebase/storage";
 import { getAnalytics } from "firebase/analytics";
 
+const fallbackFirebaseConfig = {
+  apiKey: "AIzaSyDn_C0B1RpoU03iI5SZSI1qC10kZWWlNFo",
+  authDomain: "master-hoop-a1d0a.firebaseapp.com",
+  projectId: "master-hoop-a1d0a",
+  storageBucket: "master-hoop-a1d0a.appspot.com",
+  messagingSenderId: "2544230303",
+  appId: "1:2544230303:web:f6f45f628db48d23a6a7aa",
+  measurementId: "",
+};
+
+const env = import.meta.env;
+const getEnvValue = (key: keyof typeof fallbackFirebaseConfig) => {
+  const envKey = `VITE_FIREBASE_${key.replace(/[A-Z]/g, (char) => `_${char}`).toUpperCase()}`;
+  const value = env[envKey]?.trim();
+  return value || fallbackFirebaseConfig[key];
+};
+
 // Firebase config
 const firebaseConfig = {
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY || "",
+  apiKey: getEnvValue("apiKey"),
 
-  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || "",
+  authDomain: getEnvValue("authDomain"),
 
-  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || "",
+  projectId: getEnvValue("projectId"),
 
-  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || "",
+  storageBucket: getEnvValue("storageBucket"),
 
-  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || "",
+  messagingSenderId: getEnvValue("messagingSenderId"),
 
-  appId: import.meta.env.VITE_FIREBASE_APP_ID || "",
+  appId: getEnvValue("appId"),
 
-  measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID || "",
+  measurementId: getEnvValue("measurementId"),
 };
 
 const missingFirebaseKeys = Object.entries(firebaseConfig)
