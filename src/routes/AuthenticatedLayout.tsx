@@ -5,6 +5,7 @@ import { doc, serverTimestamp, setDoc } from "firebase/firestore";
 import type { PoseMetrics } from "@/src/lib/poseDetection";
 import { db } from "@/src/lib/firebase";
 import { useAuthContext } from "@/src/auth/AuthProvider";
+import { saveLocalProfile } from "@/src/auth/localProfile";
 import Sidebar from "@/src/components/layout/Sidebar";
 import RoleSidebar from "@/src/components/layout/RoleSidebar";
 import Navbar from "@/src/components/layout/Navbar";
@@ -97,7 +98,7 @@ export default function AuthenticatedLayout() {
   const hasMobileSubnav = ["games", "friends", "teams", "leaderboard", "notifications"].includes(activeTab);
 
   const saveProfile = async (data: Partial<UserProfile>) => {
-    await withTimeout(setDoc(doc(db, "users", user.uid), {
+    const nextProfile: UserProfile = {
       userId: user.uid,
       email: user.email || "",
       displayName: data.name || user.displayName || "Joueur BasketMotion-Ai",
@@ -115,7 +116,20 @@ export default function AuthenticatedLayout() {
       preferredShot: profile.preferredShot,
       createdAt: profile.createdAt || serverTimestamp(),
       updatedAt: serverTimestamp(),
-    }, { merge: true }), 10000, "Firebase Firestore ne repond pas. Verifie que la base de donnees existe.");
+    };
+
+    saveLocalProfile(user.uid, nextProfile);
+
+    try {
+      await withTimeout(
+        setDoc(doc(db, "users", user.uid), nextProfile, { merge: true }),
+        10000,
+        "Firebase Firestore ne repond pas. Verifie que la base de donnees existe.",
+      );
+    } catch (error) {
+      console.warn("Firestore profile save skipped; using local profile.", error);
+    }
+
     await withTimeout(refreshProfile(), 10000, "Le profil a ete sauvegarde, mais son rechargement a pris trop longtemps.");
     setShowProfileModal(false);
   };
