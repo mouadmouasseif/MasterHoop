@@ -35,12 +35,14 @@ export function calculatePlayerStats(events: MatchEvent[]): MatchPlayerStats[] {
       player.shotsMade += 1;
     } else if (event.type === "missed_shot") {
       player.shotsAttempted += 1;
-    } else if (event.type === "pass") {
+    } else if (event.type === "pass" || event.type === "assist") {
       player.assists += 1;
     } else if (event.type === "rebound") {
       player.rebounds += 1;
     } else if (event.type === "steal") {
       player.steals += 1;
+    } else if (event.type === "turnover") {
+      player.turnovers += 1;
     }
     player.fieldGoalPercentage = Math.round((player.shotsMade / Math.max(1, player.shotsAttempted)) * 100);
   });

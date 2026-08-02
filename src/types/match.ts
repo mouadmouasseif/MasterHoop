@@ -1,10 +1,18 @@
 export type MatchEventType =
   | "match_started"
+  | "possession"
   | "made_shot"
   | "missed_shot"
+  | "assist"
   | "pass"
   | "rebound"
   | "steal"
+  | "turnover"
+  | "block"
+  | "fast_break"
+  | "foul"
+  | "timeout"
+  | "substitution"
   | "score_change"
   | "highlight_generated"
   | "match_finished";
@@ -31,6 +39,7 @@ export type MatchEvent = {
   playerId: string;
   points?: 1 | 2 | 3;
   confidence?: number;
+  status?: "manual" | "suggested" | "validated" | "rejected";
   note?: string;
 };
 

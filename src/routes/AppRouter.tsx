@@ -28,6 +28,7 @@ const NotificationsPage = lazy(() => import("@/src/pages/NotificationsPage"));
 const ProfessionalWorkspacePage = lazy(() => import("@/src/pages/ProfessionalWorkspacePage"));
 const ClubWorkspacePage = lazy(() => import("@/src/pages/ClubWorkspacePage"));
 const EliteAnalyticsPage = lazy(() => import("@/src/pages/EliteAnalyticsPage"));
+const MatchIntelligencePage = lazy(() => import("@/src/pages/MatchIntelligencePage"));
 
 const coachPaths = ["athletes", "analyses", "compare", "drills", "exercices", "missions", "training-plans", "programmes", "equipes", "reports", "rapports", "notifications"];
 const clubPaths = ["players", "joueurs", "coaches", "coachs", "teams", "equipes", "matches", "matchs", "attendance", "presences", "performance", "performances", "training", "entrainements", "reports", "rapports", "settings", "parametres"];
@@ -114,9 +115,9 @@ export default function AppRouter() {
             <Route path="fatigue" element={<EliteAnalyticsPage />} />
           </Route>
           <Route path="/match-intelligence" element={<AuthenticatedLayout />}>
-            <Route index element={<ProfessionalWorkspaceRoute kind="match" />} />
-            <Route path=":matchId" element={<ProfessionalWorkspaceRoute kind="match" />} />
-            <Route path="live/:matchId" element={<ProfessionalWorkspaceRoute kind="match" />} />
+            <Route index element={<MatchIntelligencePage />} />
+            <Route path=":matchId" element={<MatchIntelligencePage />} />
+            <Route path="live/:matchId" element={<MatchIntelligencePage />} />
           </Route>
           <Route path="/tournaments" element={<AuthenticatedLayout />}>
             <Route index element={<ProfessionalWorkspaceRoute kind="ecosystem" />} />

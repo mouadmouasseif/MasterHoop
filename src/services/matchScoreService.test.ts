@@ -7,6 +7,8 @@ const events: MatchEvent[] = [
   { id: "e2", type: "made_shot", timestamp: 12, team: "A", playerId: "p1", points: 2 },
   { id: "e3", type: "missed_shot", timestamp: 18, team: "B", playerId: "p2" },
   { id: "e4", type: "made_shot", timestamp: 30, team: "B", playerId: "p2", points: 3 },
+  { id: "e5", type: "assist", timestamp: 31, team: "B", playerId: "p2" },
+  { id: "e6", type: "turnover", timestamp: 40, team: "A", playerId: "p1" },
 ];
 
 describe("matchScoreService", () => {
@@ -19,6 +21,8 @@ describe("matchScoreService", () => {
 
     expect(summary.winner).toBe("B");
     expect(summary.playerStats[0].playerId).toBe("p2");
+    expect(summary.playerStats[0].assists).toBe(1);
+    expect(summary.playerStats.find((player) => player.playerId === "p1")?.turnovers).toBe(1);
     expect(summary.highlights.length).toBe(2);
   });
 });

@@ -99,11 +99,13 @@ Limits:
 
 Manual:
 
-- Routes and workspace added for manual assisted review.
+- Dedicated Match Intelligence page added for manual assisted review.
+- Manual event entry, timeline import, score, statistics, validation queue, and live dashboard added.
+- Local engine added in `src/match-intelligence/matchIntelligenceEngine.ts`.
 
 Assisted:
 
-- Architecture documented for AI suggestions requiring validation.
+- AI suggestions require coach validation and rejected suggestions are excluded from official stats.
 
 Automatic:
 

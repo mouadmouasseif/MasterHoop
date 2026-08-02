@@ -39,7 +39,11 @@
 
 ## Sprint 6 - Match Intelligence
 
-- Add manual assisted match importer, timeline, events, statistics, validation, and live dashboard.
+- Added local Match Intelligence engine.
+- Added dedicated Match Intelligence page for `/match-intelligence`, `/match-intelligence/:matchId`, and `/match-intelligence/live/:matchId`.
+- Manual assisted timeline, event entry, score, statistics, validation queue, importer, and live dashboard are implemented.
+- AI suggestions require coach validation before official reporting.
+- Remaining: Firestore persistence, video sync, and validated specialized automatic match models.
 
 ## Sprint 7 - Ecosystem
 
