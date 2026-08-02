@@ -29,6 +29,7 @@ const ProfessionalWorkspacePage = lazy(() => import("@/src/pages/ProfessionalWor
 const ClubWorkspacePage = lazy(() => import("@/src/pages/ClubWorkspacePage"));
 const EliteAnalyticsPage = lazy(() => import("@/src/pages/EliteAnalyticsPage"));
 const MatchIntelligencePage = lazy(() => import("@/src/pages/MatchIntelligencePage"));
+const EcosystemPage = lazy(() => import("@/src/pages/EcosystemPage"));
 
 const coachPaths = ["athletes", "analyses", "compare", "drills", "exercices", "missions", "training-plans", "programmes", "equipes", "reports", "rapports", "notifications"];
 const clubPaths = ["players", "joueurs", "coaches", "coachs", "teams", "equipes", "matches", "matchs", "attendance", "presences", "performance", "performances", "training", "entrainements", "reports", "rapports", "settings", "parametres"];
@@ -120,17 +121,17 @@ export default function AppRouter() {
             <Route path="live/:matchId" element={<MatchIntelligencePage />} />
           </Route>
           <Route path="/tournaments" element={<AuthenticatedLayout />}>
-            <Route index element={<ProfessionalWorkspaceRoute kind="ecosystem" />} />
+            <Route index element={<EcosystemPage />} />
           </Route>
           <Route path="/marketplace" element={<AuthenticatedLayout />}>
-            <Route index element={<ProfessionalWorkspaceRoute kind="ecosystem" />} />
+            <Route index element={<EcosystemPage />} />
           </Route>
           <Route path="/training-generator" element={<AuthenticatedLayout />}>
-            <Route index element={<ProfessionalWorkspaceRoute kind="ecosystem" />} />
+            <Route index element={<EcosystemPage />} />
           </Route>
           <Route path="/integrations" element={<AuthenticatedLayout />}>
-            <Route index element={<ProfessionalWorkspaceRoute kind="ecosystem" />} />
-            <Route path="wearables" element={<ProfessionalWorkspaceRoute kind="ecosystem" />} />
+            <Route index element={<EcosystemPage />} />
+            <Route path="wearables" element={<EcosystemPage />} />
           </Route>
           <Route path="/research" element={<AuthenticatedLayout />}>
             <Route index element={<ProfessionalWorkspaceRoute kind="ecosystem" />} />

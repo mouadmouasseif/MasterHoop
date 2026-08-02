@@ -4,15 +4,12 @@ Planned route:
 
 - `/tournaments`
 
-Planned capabilities:
+Current Sprint 7 capabilities:
 
-- competition creation
+- tournament preview
 - teams
-- players
-- schedule
-- results
-- statistics
-- MVP
+- bracket
+- local results
 - leaderboard
 - team rankings
 

@@ -47,7 +47,13 @@
 
 ## Sprint 7 - Ecosystem
 
-- Add tournaments, marketplace, training generator, integrations architecture, and cloud job architecture.
+- Added local Ecosystem service.
+- Added dedicated Ecosystem page for `/tournaments`, `/marketplace`, `/training-generator`, `/integrations`, and `/integrations/wearables`.
+- Tournament preview includes teams, bracket, results, and leaderboard.
+- Marketplace preview includes free, club-only, premium, and requires-configuration states.
+- AI training generator creates coach-validation-required weekly plans.
+- Integrations and cloud jobs show `requires_configuration` when no provider backend exists.
+- Remaining: Firestore tournaments, secure payments, provider OAuth, production cloud queues, and publishing workflows.
 
 ## Sprint 8 - Native / Research
 

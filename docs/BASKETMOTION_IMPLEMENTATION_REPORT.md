@@ -121,6 +121,10 @@ Mobile/Desktop/Wearables/Cloud/Tournament/Marketplace:
 
 - Architecture docs and routes added.
 - Unconfigured external integrations remain disabled/preview.
+- Local Ecosystem service added in `src/ecosystem/ecosystemService.ts`.
+- Dedicated Ecosystem page added for tournaments, marketplace, training generator, integrations, and wearables.
+- Tournament leaderboard, marketplace catalog, weekly training generator, provider readiness, and cloud job preview added.
+- Tests added for tournament ranking, training generation, and integration configuration states.
 
 ## Tests
 
