@@ -1,7 +1,7 @@
 {
-  "name": "BasketMotion-Ai AI Basketball Training",
-  "short_name": "BasketMotion-Ai",
-  "description": "AI basketball coaching, live training, upload analysis, and session replay.",
+  "name": "BasketMotion AI",
+  "short_name": "BasketMotion",
+  "description": "AI Basketball Performance Intelligence for athletes, coaches, clubs, scouting, and match review.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",

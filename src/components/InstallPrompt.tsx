@@ -1,5 +1,7 @@
 import { Download, Smartphone, X } from "lucide-react";
 import { useEffect, useState } from "react";
+import { BRAND_SHORT_NAME, CURRENT_LOCAL_PREFIX } from "@/src/shared/brand";
+import { getLocalStorageWithLegacy } from "@/src/shared/legacyMigration";
 
 type BeforeInstallPromptEvent = Event & {
   prompt: () => Promise<void>;
@@ -8,7 +10,8 @@ type BeforeInstallPromptEvent = Event & {
 
 export default function InstallPrompt() {
   const [promptEvent, setPromptEvent] = useState<BeforeInstallPromptEvent | null>(null);
-  const [dismissed, setDismissed] = useState(() => localStorage.getItem("BasketMotion-AiInstallDismissed") === "1");
+  const installDismissedKey = `${CURRENT_LOCAL_PREFIX}:install-dismissed`;
+  const [dismissed, setDismissed] = useState(() => getLocalStorageWithLegacy(installDismissedKey, ["BasketMotion-AiInstallDismissed"], "0") === "1");
   const isIos = /iphone|ipad|ipod/i.test(navigator.userAgent);
   const isStandalone = window.matchMedia?.("(display-mode: standalone)").matches || (navigator as any).standalone;
 
@@ -24,7 +27,7 @@ export default function InstallPrompt() {
   if (dismissed || isStandalone || (!promptEvent && !isIos)) return null;
 
   const close = () => {
-    localStorage.setItem("BasketMotion-AiInstallDismissed", "1");
+    localStorage.setItem(installDismissedKey, "1");
     setDismissed(true);
   };
 
@@ -44,7 +47,7 @@ export default function InstallPrompt() {
       <div className="flex gap-3 pr-8">
         <div className="rounded-xl bg-brand-orange/15 p-3 text-brand-orange"><Smartphone size={22} /></div>
         <div>
-          <div className="font-black uppercase">Install BasketMotion-Ai</div>
+          <div className="font-black uppercase">Install {BRAND_SHORT_NAME}</div>
           <p className="mt-1 text-sm text-white/55">
             {isIos ? "On iPhone, tap Share, then Add to Home Screen." : "Add the app to your phone for fullscreen training and offline launch."}
           </p>

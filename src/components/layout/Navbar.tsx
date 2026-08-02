@@ -4,6 +4,7 @@ import { cn } from "@/src/lib/utils";
 import { auth } from "@/src/lib/firebase";
 import type { ActiveTab, UserProfile } from "@/src/types";
 import basketMotionAiLogo from "@/src/assets/basketmotion-logo.png";
+import { BRAND_NAME, BRAND_SECONDARY_TAGLINE } from "@/src/shared/brand";
 
 type Props = {
   isImmersive: boolean;
@@ -11,7 +12,6 @@ type Props = {
   user: FirebaseUser | null;
   walletAddress: string | null;
   profile: UserProfile | null;
-
   onGoogleLogin?: () => void;
   onMetaMaskLogin?: () => void;
   onOpenProfile: () => void;
@@ -37,81 +37,40 @@ export default function Navbar({
   return (
     <header
       className={cn(
-        "flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4 transition-all duration-500",
-        isImmersive && activeTab === "live" && "opacity-0 h-0 mb-0 overflow-hidden"
+        "mb-8 flex flex-col justify-between gap-4 transition-all duration-500 md:flex-row md:items-center",
+        isImmersive && activeTab === "live" && "h-0 mb-0 overflow-hidden opacity-0",
       )}
     >
-      {/* LOGO */}
       <div className="flex items-center gap-3">
-        <img
-          src={basketMotionAiLogo}
-          alt="Basket Motion logo"
-          className="h-12 w-12 rounded-xl object-cover ring-1 ring-white/10"
-        />
+        <img src={basketMotionAiLogo} alt={`${BRAND_NAME} logo`} className="h-12 w-12 rounded-xl object-cover ring-1 ring-white/10" />
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Basket Motion</h1>
-          <p className="text-white/40 text-sm mt-1">
-            Analyse de performance basketball en temps réel
-          </p>
+          <h1 className="text-3xl font-bold tracking-tight">{BRAND_NAME}</h1>
+          <p className="mt-1 text-sm text-white/40">{BRAND_SECONDARY_TAGLINE}</p>
         </div>
       </div>
 
-      {/* ACTIONS */}
       <div className="flex items-center gap-3">
         {!user && !walletAddress ? (
           <div className="flex gap-2">
-            <button
-              onClick={() => onGoogleLogin?.()}
-              className="px-5 py-2.5 bg-brand-orange text-white rounded-xl font-bold hover:brightness-110 transition-all shadow-lg shadow-brand-orange/20"
-            >
+            <button onClick={() => onGoogleLogin?.()} className="rounded-xl bg-brand-orange px-5 py-2.5 font-bold text-white shadow-lg shadow-brand-orange/20 transition-all hover:brightness-110">
               Login
             </button>
-
-            <button
-              onClick={() => onMetaMaskLogin?.()}
-              className="px-3 py-2.5 bg-white/5 border border-white/10 text-white rounded-xl font-bold hover:bg-white/10 transition-all"
-              title="Connect MetaMask"
-            >
+            <button onClick={() => onMetaMaskLogin?.()} className="rounded-xl border border-white/10 bg-white/5 px-3 py-2.5 font-bold text-white transition-all hover:bg-white/10" title="Connect MetaMask">
               <Activity size={18} />
             </button>
           </div>
         ) : (
           <div className="flex items-center gap-3">
-            {/* USER INFO */}
-            <div className="text-right hidden md:block">
+            <div className="hidden text-right md:block">
               <div className="text-xs font-bold text-white">
-                {walletAddress
-                  ? `${walletAddress.slice(0, 6)}...${walletAddress.slice(-4)}`
-                  : profile?.name || user?.displayName || "Player"}
+                {walletAddress ? `${walletAddress.slice(0, 6)}...${walletAddress.slice(-4)}` : profile?.name || user?.displayName || "Player"}
               </div>
-
-              <div className="text-[10px] text-white/40 uppercase font-mono">
-                {profile?.totalSessions || 0} Sessions
-              </div>
+              <div className="font-mono text-[10px] uppercase text-white/40">{profile?.totalSessions || 0} Sessions</div>
             </div>
-
-            {/* AVATAR */}
-            <button
-              onClick={onOpenProfile}
-              className="w-10 h-10 rounded-xl border-2 border-brand-orange/40 overflow-hidden hover:scale-105 transition-all"
-            >
-              <img
-                src={
-                  user?.photoURL ||
-                  `https://api.dicebear.com/7.x/avataaars/svg?seed=${
-                    user?.uid || walletAddress
-                  }`
-                }
-                alt="avatar"
-              />
+            <button onClick={onOpenProfile} className="h-10 w-10 overflow-hidden rounded-xl border-2 border-brand-orange/40 transition-all hover:scale-105">
+              <img src={user?.photoURL || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user?.uid || walletAddress}`} alt="avatar" />
             </button>
-
-            {/* LOGOUT */}
-            <button
-              onClick={handleLogout}
-              className="p-2 text-white/40 hover:text-red-400 transition-colors"
-              title="Déconnexion"
-            >
+            <button onClick={handleLogout} className="p-2 text-white/40 transition-colors hover:text-red-400" title="Deconnexion">
               <Square size={16} fill="currentColor" />
             </button>
           </div>

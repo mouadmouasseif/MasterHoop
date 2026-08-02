@@ -1,4 +1,6 @@
 import type { DrillCategory } from "@/src/types";
+import { CURRENT_LOCAL_PREFIX } from "@/src/shared/brand";
+import { getLocalStorageWithLegacy } from "@/src/shared/legacyMigration";
 
 export type TrainingDrill = {
   id: string;
@@ -112,13 +114,13 @@ export function recommendDrills(weaknesses: string[] = []) {
 export function toggleFavoriteDrill(id: string) {
   const current = getFavoriteDrillIds();
   const next = current.includes(id) ? current.filter((item) => item !== id) : [...current, id];
-  localStorage.setItem("BasketMotion-AiFavoriteDrills", JSON.stringify(next));
+  localStorage.setItem(`${CURRENT_LOCAL_PREFIX}:favorite-drills`, JSON.stringify(next));
   return next;
 }
 
 export function getFavoriteDrillIds(): string[] {
   try {
-    return JSON.parse(localStorage.getItem("BasketMotion-AiFavoriteDrills") || "[]");
+    return JSON.parse(getLocalStorageWithLegacy(`${CURRENT_LOCAL_PREFIX}:favorite-drills`, ["BasketMotion-AiFavoriteDrills", "masterhoop_favorite_drills"], "[]"));
   } catch {
     return [];
   }
@@ -127,13 +129,13 @@ export function getFavoriteDrillIds(): string[] {
 export function addDrillWatchHistory(id: string) {
   const current = getDrillWatchHistory().filter((item) => item.id !== id);
   const next = [{ id, watchedAt: new Date().toISOString() }, ...current].slice(0, 30);
-  localStorage.setItem("BasketMotion-AiDrillWatchHistory", JSON.stringify(next));
+  localStorage.setItem(`${CURRENT_LOCAL_PREFIX}:drill-watch-history`, JSON.stringify(next));
   return next;
 }
 
 export function getDrillWatchHistory(): { id: string; watchedAt: string }[] {
   try {
-    return JSON.parse(localStorage.getItem("BasketMotion-AiDrillWatchHistory") || "[]");
+    return JSON.parse(getLocalStorageWithLegacy(`${CURRENT_LOCAL_PREFIX}:drill-watch-history`, ["BasketMotion-AiDrillWatchHistory", "masterhoop_drill_watch_history"], "[]"));
   } catch {
     return [];
   }

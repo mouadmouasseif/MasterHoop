@@ -1,3 +1,6 @@
+import { basketmotionFilename, CURRENT_LOCAL_PREFIX } from "@/src/shared/brand";
+import { getLocalStorageWithLegacy } from "@/src/shared/legacyMigration";
+
 export type LocalAnalysis = {
   id: string;
   title: string;
@@ -34,12 +37,13 @@ export type MeasuredLocalAnalysisInput = {
   shotAnalysis?: import("@/src/ai/types").ShotSequenceAnalysis;
 };
 
-const STORAGE_KEY = 'BasketMotion-AiAnalyses';
+const STORAGE_KEY = `${CURRENT_LOCAL_PREFIX}:analyses`;
+const LEGACY_STORAGE_KEYS = ["BasketMotion-AiAnalyses", "masterhoop_analyses", "master-hoop-analyses"];
 
 export function getLocalAnalyses(): LocalAnalysis[] {
   if (typeof window === 'undefined') return [];
   try {
-    return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+    return JSON.parse(getLocalStorageWithLegacy(STORAGE_KEY, LEGACY_STORAGE_KEYS, '[]'));
   } catch {
     return [];
   }
@@ -80,4 +84,8 @@ export function downloadJson(filename: string, data: unknown) {
   link.download = filename;
   link.click();
   URL.revokeObjectURL(url);
+}
+
+export function downloadBasketMotionJson(name: string, data: unknown) {
+  downloadJson(basketmotionFilename(name, "json"), data);
 }

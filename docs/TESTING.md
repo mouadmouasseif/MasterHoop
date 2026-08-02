@@ -37,7 +37,7 @@ Les fixtures du moteur et les quatre clips vidéo sont synthétiques et marqués
 
 ## Exécuter Firebase
 
-Installer JDK 21+, vérifier `java -version`, puis exécuter `npm run test:firebase`. Aucun compte Firebase réel n’est requis : l’identifiant local est `BasketMotion-Ai-rules-test`. Sur ce poste, le shell doit pointer explicitement `JAVA_HOME` vers `C:\Program Files\Eclipse Adoptium\jdk-21.0.12.8-hotspot` tant que sa session n’a pas été redémarrée.
+Installer JDK 21+, vérifier `java -version`, puis exécuter `npm run test:firebase`. Aucun compte Firebase réel n’est requis : l’identifiant local est `basketmotion-rules-test`. Sur ce poste, le shell doit pointer explicitement `JAVA_HOME` vers `C:\Program Files\Eclipse Adoptium\jdk-21.0.12.8-hotspot` tant que sa session n’a pas été redémarrée.
 
 ## Validations terrain restantes
 

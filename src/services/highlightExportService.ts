@@ -26,7 +26,7 @@ export function downloadHighlightJson(bundle: HighlightExportBundle) {
   const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
   link.href = url;
-  link.download = `master-hoop-highlights-${bundle.summary.matchId}.json`;
+  link.download = `basketmotion-highlights-${bundle.summary.matchId}.json`;
   link.click();
   URL.revokeObjectURL(url);
 }

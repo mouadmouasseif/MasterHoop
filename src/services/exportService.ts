@@ -1,4 +1,5 @@
 import type { TrainingSession } from "@/src/services/sessionService";
+import { basketmotionFilename, BRAND_NAME } from "@/src/shared/brand";
 
 type ExportBundle = {
   player?: string;
@@ -30,16 +31,16 @@ export function exportSessionsCsv({ sessions }: ExportBundle) {
     (session.recommendations || session.suggestions).join("; "),
   ]);
   const csv = [header, ...rows].map((row) => row.map(csvCell).join(",")).join("\n");
-  downloadBlob("master-hoop-sessions.csv", new Blob([csv], { type: "text/csv;charset=utf-8" }));
+  downloadBlob(basketmotionFilename("sessions", "csv"), new Blob([csv], { type: "text/csv;charset=utf-8" }));
 }
 
-export function exportProfessionalPdf({ player = "BasketMotion-Ai Player", sessions, recommendations = [] }: ExportBundle) {
+export function exportProfessionalPdf({ player = "BasketMotion Player", sessions, recommendations = [] }: ExportBundle) {
   const latest = sessions[0];
   const html = `<!doctype html>
   <html>
     <head>
       <meta charset="utf-8" />
-      <title>BasketMotion-Ai Report</title>
+      <title>${BRAND_NAME} Report</title>
       <style>
         body { font-family: Inter, Arial, sans-serif; background: #0A0A0B; color: white; padding: 32px; }
         h1 { color: #FF6B00; letter-spacing: .08em; }
@@ -51,7 +52,7 @@ export function exportProfessionalPdf({ player = "BasketMotion-Ai Player", sessi
       </style>
     </head>
     <body>
-      <h1>BasketMotion-Ai AI REPORT</h1>
+      <h1>${BRAND_NAME} REPORT</h1>
       <p>Joueur: <strong>${player}</strong></p>
       <div class="grid">
         <div class="card"><div>Sessions</div><div class="score">${sessions.length}</div></div>
@@ -69,7 +70,7 @@ export function exportProfessionalPdf({ player = "BasketMotion-Ai Player", sessi
       <script>window.print()</script>
     </body>
   </html>`;
-  downloadBlob("master-hoop-report.html", new Blob([html], { type: "text/html;charset=utf-8" }));
+  downloadBlob(basketmotionFilename("report", "html"), new Blob([html], { type: "text/html;charset=utf-8" }));
 }
 
 export function exportExcelWorkbook({ sessions, recommendations = [] }: ExportBundle) {
@@ -90,7 +91,7 @@ export function exportExcelWorkbook({ sessions, recommendations = [] }: ExportBu
     `).join("")}
   </Workbook>`;
 
-  downloadBlob("master-hoop-export.xls", new Blob([xml], { type: "application/vnd.ms-excel" }));
+  downloadBlob(basketmotionFilename("export", "xls"), new Blob([xml], { type: "application/vnd.ms-excel" }));
 }
 
 function average(values: number[]) {

@@ -3,7 +3,7 @@ import { motion } from 'motion/react';
 import { Activity, Award, Download, LineChart as LineIcon, Target, Video } from 'lucide-react';
 import { CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import StatCard from '@/src/components/ui/StatCard';
-import { downloadJson, getLocalAnalyses } from '@/src/services/localAnalysisService';
+import { downloadBasketMotionJson, getLocalAnalyses } from '@/src/services/localAnalysisService';
 
 export default function Dashboard(props: any) {
   const { sessions = [], profile } = props;
@@ -34,7 +34,7 @@ export default function Dashboard(props: any) {
           <p className="mt-2 text-sm text-white/50">Stats des entrainements live, drills testes et videos uploadees.</p>
         </div>
         <button
-          onClick={() => downloadJson('master-hoop-stats.json', { profile, sessions, analyses })}
+          onClick={() => downloadBasketMotionJson('stats', { profile, sessions, analyses })}
           className="flex items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm font-bold hover:bg-white/10"
         >
           <Download size={17} /> Telecharger data

@@ -1,5 +1,5 @@
 {
-  "name": "BasketMotion-Ai-ai",
+  "name": "basketmotion-ai",
   "private": true,
   "version": "0.0.0",
   "type": "module",
@@ -11,7 +11,7 @@
     "typecheck": "tsc --noEmit",
     "lint": "tsc --noEmit",
     "test": "vitest run --exclude tests/firebase.rules.test.ts",
-    "test:firebase": "firebase emulators:exec --project BasketMotion-Ai-rules-test --only firestore,storage \"vitest run tests/firebase.rules.test.ts\"",
+    "test:firebase": "firebase emulators:exec --project basketmotion-rules-test --only firestore,storage \"vitest run tests/firebase.rules.test.ts\"",
     "fixtures:video": "node tests/fixtures/generate-video-fixtures.mjs"
   },
   "dependencies": {

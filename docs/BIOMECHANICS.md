@@ -38,7 +38,7 @@ Cette mesure est un signal technique 2D. Elle ne mesure pas la force d’impact 
 
 ## Confiance et formulation
 
-Chaque métrique utilise `MetricResult`. Sous 0,60, sa valeur devient `null` et son statut `unavailable`. Les textes utilisent « observation technique », « signal de mouvement » ou « estimation 2D ». BasketMotion-Ai ne produit aucun diagnostic médical, aucune prescription et aucune prédiction certaine de blessure.
+Chaque métrique utilise `MetricResult`. Sous 0,60, sa valeur devient `null` et son statut `unavailable`. Les textes utilisent « observation technique », « signal de mouvement » ou « estimation 2D ». BasketMotion AI ne produit aucun diagnostic médical, aucune prescription et aucune prédiction certaine de blessure.
 
 ## Validation nécessaire
 

@@ -101,8 +101,8 @@ export default function AuthenticatedLayout() {
     const nextProfile: UserProfile = {
       userId: user.uid,
       email: user.email || "",
-      displayName: data.name || user.displayName || "Joueur BasketMotion-Ai",
-      name: data.name || user.displayName || "Joueur BasketMotion-Ai",
+      displayName: data.name || user.displayName || "Joueur BasketMotion",
+      name: data.name || user.displayName || "Joueur BasketMotion",
       photoURL: user.photoURL || null,
       role: profile.role,
       accountStatus: profile.accountStatus,

@@ -1,46 +1,33 @@
-# BasketMotion-Ai AI
+# BasketMotion AI
 
-Plateforme React, TypeScript et Vite d’analyse locale et d’entraînement basketball. Les Sprints 1 à 3 fournissent le routage par rôles, les contrôles Firebase, l’architecture de modèles, le suivi du ballon et un moteur temporel du tir fondé sur des observations 2D. Le socle du Sprint 4 ajoute la calibration projective, les distances conditionnelles, l’observation prudente du résultat, les highlights et la comparaison de séances compatibles.
+BasketMotion AI is the basketball product in the Motion ecosystem:
 
-## Démarrage
+- SailMotion AI
+- SailMotion Race
+- RowMotion AI
+- RowMotion Race
+- BasketMotion AI
 
-1. Copier `.env.example` vers `.env.local` et renseigner une application Web Firebase autorisée.
-2. Installer les dépendances avec `npm install`.
-3. Lancer `npm run dev`.
+Tagline: AI Basketball Performance Intelligence.
 
-Contrôles disponibles :
+## Current Scope
 
-```text
-npm run lint
-npm run typecheck
-npm run test
-npm run test:firebase
-npm run fixtures:video
-npm run build
-```
+BasketMotion AI provides athlete analysis, training sessions, coach workspace foundations, club dashboards, elite analytics previews, match intelligence review foundations, and professional ecosystem architecture.
 
-`test:firebase` nécessite JDK 21 ou plus récent. `fixtures:video` régénère uniquement les quatre clips WebM synthétiques et CC0 décrits dans `tests/fixtures/videos/manifest.json`. Les vidéos réelles, modèles privés et données personnelles ne doivent jamais être ajoutés au dépôt.
+The project is migrated from the legacy MasterHoop naming without deleting historical Firebase or local browser data. Legacy identifiers remain readable where they are part of existing data or Firebase project configuration.
 
-## Modèle de ballon
+## Scripts
 
-Le détecteur spécialisé est prioritaire lorsqu’il est configuré :
+- `npm run dev`
+- `npm run typecheck`
+- `npm run lint`
+- `npm run test`
+- `npm run build`
 
-```env
-VITE_BALL_MODEL_URL=/models/basketball/model.json
-```
+## Implementation Status
 
-Si son chargement ou son inférence échoue, ou si aucune détection n’atteint le seuil, COCO-SSD est chargé à la demande. Une absence de résultat des deux moteurs reste indisponible.
+Sprint 1 is focused on rebrand, navigation, roles, permissions, migration compatibility, and documentation.
 
-## Analyse du tir
+Sprint 2 is focused on the coach platform: athletes, timestamped comments, video drawings, drills, missions, training plans, reports, and rule-based AI Coach recommendations.
 
-Le moteur temporel produit une timeline, une trajectoire 2D, des métriques prudentes, une confiance et les preuves utilisées. Les points prédits par le tracker ne sont jamais utilisés comme mesures.
-
-Sans calibration valide et sans observation conjointe du ballon et du cercle :
-
-- le résultat reste `unknown` ;
-- le type reste `unknown` ;
-- les distances en mètres restent indisponibles ;
-- le transfert de puissance reste indisponible ;
-- aucune zone 2/3 points n’est annoncée.
-
-Voir `docs/AI_PIPELINE.md`, `docs/BIOMECHANICS.md`, `docs/FIREBASE_SECURITY.md` et `docs/ROADMAP.md`.
+Features that require a specialized model, backend worker, wearable API, payment provider, or licensed reference data are explicitly marked as preview, experimental, or requiring configuration.

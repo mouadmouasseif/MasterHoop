@@ -1,6 +1,6 @@
 import type { PoseMetrics } from "@/src/lib/poseDetection";
 
-export type TrainingMissionId = "shooting-fundamentals" | "crossover-mastery" | "step-back-mastery";
+export type TrainingMissionId = "shooting-fundamentals" | "crossover-mastery" | "step-back-mastery" | "match-intelligence";
 export type TrainingMissionLevel = "beginner" | "intermediate" | "advanced";
 
 export type TrainingObjective = {
@@ -162,6 +162,42 @@ export const TRAINING_MISSIONS: TrainingMissionPlan[] = [
       },
     },
   },
+  {
+    id: "match-intelligence",
+    name: "Match Intelligence",
+    levels: {
+      beginner: {
+        title: "Phase 1",
+        description: "Lire 10 possessions: spacing, choix de tir, passe simple et transition defensive.",
+        objectives: [
+          { id: "possessionsRead", label: "Possessions lues", target: 10, unit: "reads" },
+          { id: "goodDecisions", label: "Bonnes decisions", target: 7, unit: "actions" },
+          { id: "defensiveRecoveries", label: "Retours defensifs", target: 5, unit: "reps" },
+        ],
+        aiFocus: ["possession", "decision", "spacing", "transition defense"],
+      },
+      intermediate: {
+        title: "Phase 2",
+        description: "Analyser 20 possessions avec passes, aides defensives, rebonds et turnovers.",
+        objectives: [
+          { id: "possessionsRead", label: "Possessions lues", target: 20, unit: "reads" },
+          { id: "assistReads", label: "Lectures de passe", target: 8, unit: "reads" },
+          { id: "turnoverControl", label: "Controle turnovers", target: 80, unit: "score" },
+        ],
+        aiFocus: ["assist reads", "rebonds", "turnovers", "aide defensive"],
+      },
+      advanced: {
+        title: "Phase 3",
+        description: "Session elite: rotations, fast breaks, shot quality et rapport tactique complet.",
+        objectives: [
+          { id: "possessionsRead", label: "Possessions lues", target: 40, unit: "reads" },
+          { id: "rotationQuality", label: "Qualite rotations", target: 85, unit: "score" },
+          { id: "shotQuality", label: "Shot quality", target: 85, unit: "score" },
+        ],
+        aiFocus: ["rotations defensives", "fast breaks", "shot quality", "rapport tactique"],
+      },
+    },
+  },
 ];
 
 export function getMission(id: TrainingMissionId) {
@@ -252,6 +288,12 @@ function deriveValues(metrics: Partial<PoseMetrics> | null | undefined, elapsedS
     ? Math.min(99, Math.round(metrics.dribblePower * 0.75 + Math.min(crossovers, 40) * 0.25))
     : 0;
   const finishRate = attempts ? Math.round((made / attempts) * 100) : 0;
+  const possessionsRead = Math.max(attempts, Math.floor(elapsedSeconds / 18));
+  const goodDecisions = Math.min(possessionsRead, made + Math.floor(crossovers / 6));
+  const defensiveRecoveries = Math.floor(elapsedSeconds / 45);
+  const assistReads = Math.floor(Math.max(0, Number(metrics?.dribbleCount || 0)) / 8);
+  const turnoverControl = attempts ? Math.max(0, 100 - missed * 8) : Math.min(80, Math.floor(elapsedSeconds / 6));
+  const rotationQuality = Math.min(99, Math.round((turnoverControl + Math.min(defensiveRecoveries * 12, 90)) / 2));
 
   return {
     closeShots: metrics?.shots?.filter((shot) => shot.shotType === "Close Range").length || 0,
@@ -279,6 +321,12 @@ function deriveValues(metrics: Partial<PoseMetrics> | null | undefined, elapsedS
     stepBackShots: metrics?.shots?.filter((shot) => shot.shotType === "Step Back").length || 0,
     leftRightMix: 0,
     crossoverStepBack: Math.min(crossovers, stepBacks),
+    possessionsRead,
+    goodDecisions,
+    defensiveRecoveries,
+    assistReads,
+    turnoverControl,
+    rotationQuality,
   };
 }
 
@@ -286,9 +334,10 @@ function chooseVoiceCue(missionId: TrainingMissionId, metrics: Partial<PoseMetri
   if (metrics?.madeShots && metrics.madeShots > 0) return "Excellent tir";
   if (metrics?.isCrossover) return "Acceleration efficace";
   if (missionId === "step-back-mastery" && (metrics?.isFadeaway || metrics?.isShooting)) return "Tres bon step-back";
+  if (missionId === "match-intelligence" && completionRate > 50) return "Bonne lecture de jeu";
   if (metrics?.kneeAngle && metrics.kneeAngle < 55) return "Pense a garder ton equilibre";
   if (Number(metrics?.dribbleRhythm || 0) > 155) return "Relachement trop rapide";
-  if (completionRate > 80) return "BasketMotion-Ai Elite en approche";
+  if (completionRate > 80) return "BasketMotion Elite en approche";
   return "Continue, garde le rythme";
 }
 
@@ -298,7 +347,7 @@ function unlockBadges(missionId: TrainingMissionId, values: Record<string, numbe
   if (values.midRangeShots >= 30) badges.push("🔥 Mid-Range Killer");
   if (values.crossovers >= 40) badges.push("⚡ Crossover King");
   if (missionId === "step-back-mastery" && values.stepBacks >= 20) badges.push("👑 Step-Back Master");
-  if (completionRate >= 95) badges.push("🏀 BasketMotion-Ai Elite");
+  if (completionRate >= 95) badges.push("🏀 BasketMotion Elite");
   return badges;
 }
 
@@ -324,6 +373,9 @@ function buildRecommendations(missionId: TrainingMissionId, completionRate: numb
   }
   if (missionId === "crossover-mastery") {
     return ["Descendre le centre de gravite.", "Changer de rythme apres chaque crossover.", "Finir chaque serie par une acceleration franche."];
+  }
+  if (missionId === "match-intelligence") {
+    return ["Scanner avant reception.", "Nommer la premiere option de passe.", "Revenir en defense des que le tir part."];
   }
   return completionRate >= 80
     ? ["Ajouter un defenseur passif.", "Varier step-back gauche et droite.", "Travailler le tir apres crossover."]

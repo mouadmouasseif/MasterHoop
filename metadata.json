@@ -1,6 +1,6 @@
 {
-  "name": "Basket Motion AI",
-  "description": "Plateforme de coaching basket assistée par IA avec analyse en temps réel, suivi des mouvements et statistiques de performance.",
+  "name": "BasketMotion AI",
+  "description": "AI Basketball Performance Intelligence for athletes, coaches, clubs, scouting, and match review.",
   "requestFramePermissions": [
     "camera",
     "microphone"

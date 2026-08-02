@@ -16,6 +16,7 @@ import {
   type Unsubscribe,
 } from "firebase/firestore";
 import { db } from "@/src/lib/firebase";
+import { BRAND_SHORT_NAME, CURRENT_QR_SCHEME } from "@/src/shared/brand";
 import type {
   AIMatchRecord,
   FriendRequest,
@@ -53,7 +54,7 @@ export const createEmptyMatchStats = (): MatchStats => ({
 
 export function createPlayerId(seed: string) {
   const hash = Array.from(seed).reduce((sum, char) => sum + char.charCodeAt(0) * 17, 458742);
-  return `MH-${String(hash).slice(-6).padStart(6, "0")}`;
+  return `BM-${String(hash).slice(-6).padStart(6, "0")}`;
 }
 
 export function profileToSocialPlayer(
@@ -61,7 +62,7 @@ export function profileToSocialPlayer(
   fallback: { uid: string; email?: string | null; displayName?: string | null; photoURL?: string | null },
 ): SocialPlayer {
   const uniquePlayerId = profile?.uniquePlayerId || createPlayerId(fallback.uid);
-  const fullName = profile?.fullName || profile?.name || fallback.displayName || "BasketMotion-Ai Player";
+  const fullName = profile?.fullName || profile?.name || fallback.displayName || "BasketMotion Player";
   const username = profile?.username || fullName.toLowerCase().replace(/[^a-z0-9]+/g, ".").replace(/\.$/, "") || uniquePlayerId.toLowerCase();
   const storedStats = (profile as UserProfile & { stats?: Partial<PlayerStats> } | null)?.stats || {};
   return {
@@ -71,7 +72,7 @@ export function profileToSocialPlayer(
     photoURL: profile?.photoURL || fallback.photoURL || `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(fullName)}`,
     email: profile?.email || fallback.email || "",
     uniquePlayerId,
-    qrCode: profile?.qrCode || `BasketMotion-Ai://player/${uniquePlayerId}`,
+    qrCode: profile?.qrCode || `${CURRENT_QR_SCHEME}${uniquePlayerId}`,
     followers: profile?.followers || 0,
     following: profile?.following || 0,
     teams: profile?.teams || [],
@@ -164,7 +165,7 @@ export async function sendFriendRequest(from: SocialPlayer, to: SocialPlayer) {
     createdAt: serverTimestamp(),
   };
   await addDoc(collection(db, "friend_requests"), payload);
-  await createNotification(to.uid, "Nouvelle invitation ami", `${from.fullName} veut t'ajouter sur BasketMotion-Ai.`);
+  await createNotification(to.uid, "Nouvelle invitation ami", `${from.fullName} veut t'ajouter sur ${BRAND_SHORT_NAME}.`);
 }
 
 export async function acceptFriendRequest(request: FriendRequest, me: SocialPlayer) {

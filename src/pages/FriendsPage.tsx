@@ -12,6 +12,7 @@ import {
   subscribeFriendRequests,
   subscribeFriends,
 } from "@/src/services/socialService";
+import { CURRENT_QR_SCHEME, parsePlayerQr } from "@/src/shared/brand";
 
 export default function FriendsPage({ user, profile }: { user: FirebaseUser | null; profile: UserProfile | null }) {
   const me = useMemo(() => user ? profileToSocialPlayer(profile, user) : null, [profile, user]);
@@ -45,11 +46,11 @@ export default function FriendsPage({ user, profile }: { user: FirebaseUser | nu
   };
 
   const addByQr = async (value = qrValue) => {
-    const id = value.replace("BasketMotion-Ai://player/", "").trim();
+    const id = parsePlayerQr(value);
     setQuery(id);
     const [match] = await searchPlayers(id);
     if (match) await addFriend(match);
-    else setStatus("QR Code non reconnu. Essaie avec un Player ID comme MH-458742.");
+    else setStatus("QR Code non reconnu. Essaie avec un Player ID comme BM-458742.");
   };
 
   return (
@@ -65,7 +66,7 @@ export default function FriendsPage({ user, profile }: { user: FirebaseUser | nu
           <div className="mb-4 flex flex-col gap-3 md:flex-row">
             <div className="flex flex-1 items-center gap-2 rounded-xl border border-white/10 bg-black/25 px-4 py-3">
               <Search size={18} className="text-brand-orange" />
-              <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Username, email, MH-458742..." className="w-full bg-transparent text-sm outline-none placeholder:text-white/30" />
+              <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Username, email, BM-458742..." className="w-full bg-transparent text-sm outline-none placeholder:text-white/30" />
             </div>
             <button onClick={() => runSearch()} className="rounded-xl bg-brand-orange px-5 py-3 text-sm font-black uppercase">Search</button>
           </div>
@@ -99,7 +100,7 @@ export default function FriendsPage({ user, profile }: { user: FirebaseUser | nu
           <div className="glass-card p-6">
             <div className="mb-4 flex items-center gap-2 text-sm font-black uppercase text-brand-orange"><QrCode size={18} /> QR Code</div>
             <div className="rounded-2xl border border-white/10 bg-white p-4 text-center text-xs font-black text-black">
-              {me?.qrCode || "BasketMotion-Ai://player/MH-000000"}
+              {me?.qrCode || `${CURRENT_QR_SCHEME}BM-000000`}
             </div>
             <input value={qrValue} onChange={(event) => setQrValue(event.target.value)} placeholder="Coller QR / Player ID scanne" className="mt-4 w-full rounded-xl border border-white/10 bg-black/25 px-4 py-3 text-sm outline-none" />
             <div className="mt-3 flex gap-2">

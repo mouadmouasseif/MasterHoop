@@ -13,9 +13,9 @@ export default defineConfig(() => {
         registerType: 'autoUpdate',
         includeAssets: ['icons/icon-192.png', 'icons/icon-512.png'],
         manifest: {
-          name: 'BasketMotion-Ai AI Basketball Training',
-          short_name: 'BasketMotion-Ai',
-          description: 'AI basketball coaching, live training, upload analysis, and session replay.',
+          name: 'BasketMotion AI',
+          short_name: 'BasketMotion',
+          description: 'AI Basketball Performance Intelligence for athletes, coaches, clubs, scouting, and match review.',
           start_url: '/',
           scope: '/',
           display: 'standalone',
@@ -47,7 +47,7 @@ export default defineConfig(() => {
               urlPattern: /\/assets\/opencv-[^/]+\.js$/i,
               handler: 'CacheFirst',
               options: {
-                cacheName: 'master-hoop-opencv-runtime',
+                cacheName: 'basketmotion-opencv-runtime',
                 expiration: { maxEntries: 1, maxAgeSeconds: 60 * 60 * 24 * 30 },
               },
             },

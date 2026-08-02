@@ -19,7 +19,7 @@ Les contrats communs sont définis dans `src/ai/types/index.ts`. Les modes `real
 ## Sources observées
 
 - Pose : points MoveNet avec confiance par articulation.
-- Ballon : modèle spécialisé BasketMotion-Ai lorsqu’il est configuré, sinon COCO-SSD en fallback.
+- Ballon : modèle spécialisé BasketMotion AI lorsqu’il est configuré, sinon COCO-SSD en fallback.
 - Tracking : les points possèdent le drapeau `observed`. Une prédiction courte peut maintenir l’affichage, mais elle ne valide ni relâchement, ni trajectoire, ni résultat.
 - Temps : millisecondes relatives à la vidéo ou au début de l’enregistrement.
 - Cercle : annotation manuelle autorisée ou modèle de vision validé, avec centre, largeur apparente et confiance.

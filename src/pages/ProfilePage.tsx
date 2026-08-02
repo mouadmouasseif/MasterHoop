@@ -2,8 +2,9 @@ import { Download, Edit3, QrCode, Share2, UserRound } from "lucide-react";
 import type { User as FirebaseUser } from "firebase/auth";
 import { Area, AreaChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import type { Session, UserProfile } from "@/src/types";
-import { downloadJson, getLocalAnalyses } from "@/src/services/localAnalysisService";
+import { downloadBasketMotionJson, getLocalAnalyses } from "@/src/services/localAnalysisService";
 import { profileToSocialPlayer } from "@/src/services/socialService";
+import { BRAND_NAME, CURRENT_QR_SCHEME } from "@/src/shared/brand";
 
 export default function ProfilePage({
   user,
@@ -28,7 +29,7 @@ export default function ProfilePage({
 
   const shareProfile = async () => {
     const url = `${window.location.origin}/player/${social?.uniquePlayerId || "MH-000000"}`;
-    if (navigator.share) await navigator.share({ title: "BasketMotion-Ai Profile", text: social?.fullName, url }).catch(() => undefined);
+    if (navigator.share) await navigator.share({ title: `${BRAND_NAME} Profile`, text: social?.fullName, url }).catch(() => undefined);
     else await navigator.clipboard?.writeText(url);
   };
 
@@ -42,7 +43,7 @@ export default function ProfilePage({
             </div>
             <div>
               <div className="text-xs font-black uppercase tracking-[0.24em] text-brand-orange">Profil joueur avance</div>
-              <h2 className="text-3xl font-black">{social?.fullName || "Joueur BasketMotion-Ai"}</h2>
+              <h2 className="text-3xl font-black">{social?.fullName || "Joueur BasketMotion"}</h2>
               <p className="text-sm text-white/45">@{social?.username || "player"} - {social?.email || "Compte local"}</p>
               <div className="mt-3 flex flex-wrap gap-2">
                 <Badge label={social?.uniquePlayerId || "MH-000000"} />
@@ -59,7 +60,7 @@ export default function ProfilePage({
             <button onClick={shareProfile} className="flex items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm font-bold">
               <Share2 size={17} /> Partager
             </button>
-            <button onClick={() => downloadJson("master-hoop-profile-data.json", exportData)} className="flex items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm font-bold">
+            <button onClick={() => downloadBasketMotionJson("profile-data", exportData)} className="flex items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm font-bold">
               <Download size={17} /> Data
             </button>
           </div>
@@ -78,7 +79,7 @@ export default function ProfilePage({
         <div className="glass-card p-6">
           <div className="mb-4 flex items-center gap-2 text-xl font-black uppercase"><QrCode className="text-brand-orange" /> QR personnel</div>
           <div className="rounded-2xl bg-white p-5 text-center text-sm font-black text-black">
-            {social?.qrCode || "BasketMotion-Ai://player/MH-000000"}
+            {social?.qrCode || `${CURRENT_QR_SCHEME}BM-000000`}
           </div>
           <p className="mt-3 text-sm text-white/50">A scanner pour ajouter automatiquement ce joueur comme ami ou membre d'equipe.</p>
         </div>

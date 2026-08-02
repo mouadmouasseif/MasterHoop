@@ -48,7 +48,7 @@ export function resolveLegacyProfile(
 ): ResolvedUserProfile {
   const role = isUserRole(profile?.role) ? profile.role : "athlete";
   const displayName =
-    profile?.displayName || profile?.fullName || profile?.name || user.displayName || "Joueur BasketMotion-Ai";
+    profile?.displayName || profile?.fullName || profile?.name || user.displayName || "Joueur BasketMotion";
 
   return {
     userId: user.uid,

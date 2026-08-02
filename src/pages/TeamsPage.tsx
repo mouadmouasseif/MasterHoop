@@ -13,6 +13,7 @@ import {
   subscribeFriends,
   subscribeTeams,
 } from "@/src/services/socialService";
+import { parsePlayerQr } from "@/src/shared/brand";
 
 export default function TeamsPage({ user, profile }: { user: FirebaseUser | null; profile: UserProfile | null }) {
   const me = useMemo(() => user ? profileToSocialPlayer(profile, user) : null, [profile, user]);
@@ -56,7 +57,7 @@ export default function TeamsPage({ user, profile }: { user: FirebaseUser | null
   };
 
   const addPlayer = useCallback(async (value = inviteQuery) => {
-    const clean = value.replace("BasketMotion-Ai://player/", "").trim();
+    const clean = parsePlayerQr(value);
     if (!clean) return;
 
     const friend = friends.find((player) =>

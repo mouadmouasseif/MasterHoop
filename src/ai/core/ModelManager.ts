@@ -1,5 +1,6 @@
 import type { ModelManager as ModelManagerContract, ModelStatus, VisionModelAdapter } from "@/src/ai/types";
 import { ModelRegistry } from "@/src/ai/core/ModelRegistry";
+import { CURRENT_MODEL_CACHE_PREFIX, LEGACY_MODEL_CACHE_PREFIXES } from "@/src/shared/brand";
 
 export class CentralModelManager implements ModelManagerContract {
   private readonly adapters = new Map<string, VisionModelAdapter<unknown, unknown>>();
@@ -62,7 +63,8 @@ export class CentralModelManager implements ModelManagerContract {
     await Promise.all([...this.adapters.keys()].map((id) => this.unload(id)));
     if (typeof caches !== "undefined") {
       const names = await caches.keys();
-      await Promise.all(names.filter((name) => name.startsWith("master-hoop-model-")).map((name) => caches.delete(name)));
+      const prefixes = [CURRENT_MODEL_CACHE_PREFIX, ...LEGACY_MODEL_CACHE_PREFIXES];
+      await Promise.all(names.filter((name) => prefixes.some((prefix) => name.startsWith(prefix))).map((name) => caches.delete(name)));
     }
   }
 }

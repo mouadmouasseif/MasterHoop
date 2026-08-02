@@ -1,5 +1,6 @@
 import { motion } from "motion/react";
 import basketMotionAiLogo from "@/src/assets/basketmotion-logo.png";
+import { BRAND_NAME, BRAND_TAGLINE } from "@/src/shared/brand";
 
 export default function SplashScreen() {
   return (
@@ -12,14 +13,14 @@ export default function SplashScreen() {
       >
         <motion.img
           src={basketMotionAiLogo}
-          alt="BasketMotion-Ai"
+          alt={BRAND_NAME}
           className="h-24 w-24 rounded-3xl object-cover shadow-2xl shadow-brand-orange/25"
           animate={{ rotate: [0, -4, 4, 0] }}
           transition={{ repeat: Infinity, duration: 2.2 }}
         />
         <div className="text-center">
-          <div className="text-2xl font-black uppercase tracking-widest">BasketMotion-Ai</div>
-          <div className="mt-2 text-xs font-black uppercase tracking-[0.28em] text-brand-orange">AI Basketball Training</div>
+          <div className="text-2xl font-black uppercase tracking-widest">{BRAND_NAME}</div>
+          <div className="mt-2 text-xs font-black uppercase tracking-[0.28em] text-brand-orange">{BRAND_TAGLINE}</div>
         </div>
         <div className="h-1 w-44 overflow-hidden rounded-full bg-white/10">
           <motion.div className="h-full bg-brand-orange" animate={{ x: ["-100%", "120%"] }} transition={{ repeat: Infinity, duration: 1.1 }} />
