@@ -27,6 +27,7 @@ const LeaderboardPage = lazy(() => import("@/src/pages/LeaderboardPage"));
 const NotificationsPage = lazy(() => import("@/src/pages/NotificationsPage"));
 const ProfessionalWorkspacePage = lazy(() => import("@/src/pages/ProfessionalWorkspacePage"));
 const ClubWorkspacePage = lazy(() => import("@/src/pages/ClubWorkspacePage"));
+const EliteAnalyticsPage = lazy(() => import("@/src/pages/EliteAnalyticsPage"));
 
 const coachPaths = ["athletes", "analyses", "compare", "drills", "exercices", "missions", "training-plans", "programmes", "equipes", "reports", "rapports", "notifications"];
 const clubPaths = ["players", "joueurs", "coaches", "coachs", "teams", "equipes", "matches", "matchs", "attendance", "presences", "performance", "performances", "training", "entrainements", "reports", "rapports", "settings", "parametres"];
@@ -105,12 +106,12 @@ export default function AppRouter() {
             <Route index element={<AICoachRoute />} />
           </Route>
           <Route path="/elite" element={<AuthenticatedLayout />}>
-            <Route index element={<ProfessionalWorkspaceRoute kind="elite" />} />
-            <Route path="pose-comparison" element={<ProfessionalWorkspaceRoute kind="elite" />} />
-            <Route path="scouting" element={<ProfessionalWorkspaceRoute kind="elite" />} />
-            <Route path="scouting/:athleteId" element={<ProfessionalWorkspaceRoute kind="elite" />} />
-            <Route path="team-analytics" element={<ProfessionalWorkspaceRoute kind="elite" />} />
-            <Route path="fatigue" element={<ProfessionalWorkspaceRoute kind="elite" />} />
+            <Route index element={<EliteAnalyticsPage />} />
+            <Route path="pose-comparison" element={<EliteAnalyticsPage />} />
+            <Route path="scouting" element={<EliteAnalyticsPage />} />
+            <Route path="scouting/:athleteId" element={<EliteAnalyticsPage />} />
+            <Route path="team-analytics" element={<EliteAnalyticsPage />} />
+            <Route path="fatigue" element={<EliteAnalyticsPage />} />
           </Route>
           <Route path="/match-intelligence" element={<AuthenticatedLayout />}>
             <Route index element={<ProfessionalWorkspaceRoute kind="match" />} />

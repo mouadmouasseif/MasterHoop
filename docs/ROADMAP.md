@@ -31,7 +31,11 @@
 
 ## Sprint 5 - Elite Analytics
 
-- Add pose comparison, motion similarity, scouting reports, movement stability, fatigue trends, and team analytics.
+- Added local Elite Analytics engine.
+- Added dedicated Elite Analytics page for `/elite`, `/elite/pose-comparison`, `/elite/scouting`, `/elite/team-analytics`, and `/elite/fatigue`.
+- Reports include pose comparison, motion similarity, confidence-weighted scouting, fatigue trend, and team analytics.
+- Scouting blocks output when data volume or confidence is insufficient.
+- Remaining: coach-validated references, Firestore persistence, and licensed elite comparison datasets.
 
 ## Sprint 6 - Match Intelligence
 

@@ -71,13 +71,23 @@ Limits:
 
 ## Elite Analytics
 
+Engine:
+
+- Local confidence-weighted Elite Analytics engine in `src/elite/eliteAnalyticsEngine.ts`.
+
 Modules:
 
-- Routes and preview workspace added for pose comparison, scouting, team analytics, and fatigue.
+- Dedicated Elite Analytics page added for pose comparison, scouting, team analytics, and fatigue.
+- Scouting report generation added from observed data volume and confidence.
+- Fatigue trend comparison added from early versus late observed accuracy.
+- Team analytics summary added with leaders and attention list.
+- Elite Analytics tests added.
 
 Confidence:
 
 - Documentation requires confidence and data volume before ratings.
+- Scouting output is blocked when volume or confidence is below threshold.
+- Motion similarity uses personal best or coach validated references only.
 
 Limits:
 
