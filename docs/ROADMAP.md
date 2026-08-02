@@ -16,11 +16,18 @@
 
 ## Sprint 3 - Club
 
-- Replace preview dashboards with Firestore-backed club players, coaches, teams, attendance, and reports.
+- Dedicated Club Workspace page added.
+- Local club service added for players, coaches, teams, matches, reports, CSV and JSON exports.
+- Tests added for club metrics, filters, report generation, and exports.
+- Remaining: Firestore-backed club players, coaches, teams, attendance, reports, and PDF export.
 
 ## Sprint 4 - AI Coach
 
-- Expand local rules engine with position, history, load, goals, confidence, and coach validation.
+- Added local AI Coach v4 engine.
+- Added dedicated AI Coach page for `/app/coach-ia` and `/ai-coach`.
+- Recommendations use observed sessions, confidence, objective, position, equipment, and weekly frequency.
+- Insufficient data returns no assigned drills.
+- Remaining: coach validation workflow and Firestore persistence for accepted plans.
 
 ## Sprint 5 - Elite Analytics
 

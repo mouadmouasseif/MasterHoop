@@ -12,13 +12,24 @@
 - `/club/reports`
 - `/club/settings`
 
-## Current State
+## Active Foundation
 
-The club dashboard uses the professional workspace foundation and existing role guards. It exposes players, coaches, teams, matches, performance, training, reports, and settings routes.
+Sprint 3 now includes a dedicated Club Workspace page and local service foundation:
+
+- Club players
+- Club coaches
+- Club teams
+- Club matches
+- Attendance and performance metrics
+- Report generation state
+- CSV export
+- JSON export
+
+The service is local-first until Firestore club collections are fully connected. It does not invent external integrations or automatic match statistics.
 
 ## Remaining
 
 - Club-scoped Firestore collections for players, coaches, attendance, and reports.
-- CSV, JSON, and PDF exports from real club datasets.
+- PDF export from real club datasets.
 - Coach-to-team assignment UI.
 - Attendance and season reporting.

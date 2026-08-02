@@ -17,7 +17,7 @@ import {
 const LiveTraining = lazy(() => import("@/src/pages/LiveTraining"));
 const DrillsPage = lazy(() => import("@/src/pages/DrillsPage"));
 const Dashboard = lazy(() => import("@/src/pages/Dashboard"));
-const CoachPage = lazy(() => import("@/src/pages/CoachPage"));
+const AICoachPage = lazy(() => import("@/src/pages/AICoachPage"));
 const HistoryPage = lazy(() => import("@/src/pages/HistoryPage"));
 const ProfilePage = lazy(() => import("@/src/pages/ProfilePage"));
 const GameModesPage = lazy(() => import("@/src/pages/GameModesPage"));
@@ -26,11 +26,13 @@ const TeamsPage = lazy(() => import("@/src/pages/TeamsPage"));
 const LeaderboardPage = lazy(() => import("@/src/pages/LeaderboardPage"));
 const NotificationsPage = lazy(() => import("@/src/pages/NotificationsPage"));
 const ProfessionalWorkspacePage = lazy(() => import("@/src/pages/ProfessionalWorkspacePage"));
+const ClubWorkspacePage = lazy(() => import("@/src/pages/ClubWorkspacePage"));
 
 const coachPaths = ["athletes", "analyses", "compare", "drills", "exercices", "missions", "training-plans", "programmes", "equipes", "reports", "rapports", "notifications"];
 const clubPaths = ["players", "joueurs", "coaches", "coachs", "teams", "equipes", "matches", "matchs", "attendance", "presences", "performance", "performances", "training", "entrainements", "reports", "rapports", "settings", "parametres"];
 const adminPaths = ["clubs", "users", "utilisateurs", "models", "modeles", "cloud-jobs", "tournaments", "security", "securite", "audit", "settings", "parametres"];
 type ProfessionalKind = "coach" | "club" | "elite" | "match" | "ecosystem" | "admin";
+type ClubSection = "dashboard" | "players" | "coaches" | "teams" | "matches" | "attendance" | "training" | "performance" | "reports" | "settings";
 
 export default function AppRouter() {
   return (
@@ -78,10 +80,10 @@ export default function AppRouter() {
 
         <Route element={<ProtectedRoute allowedRoles={["club_admin"]} />}>
           <Route path="/club" element={<AuthenticatedLayout />}>
-            <Route index element={<ProfessionalWorkspaceRoute kind="club" />} />
+            <Route index element={<ClubWorkspaceRoute section="dashboard" />} />
             {clubPaths.map((path) => (
               <Fragment key={path}>
-                <Route path={path} element={<ProfessionalWorkspaceRoute kind={professionalKindForClubPath(path)} />} />
+                <Route path={path} element={<ClubWorkspaceRoute section={clubSectionForPath(path)} />} />
               </Fragment>
             ))}
           </Route>
@@ -100,7 +102,7 @@ export default function AppRouter() {
 
         <Route element={<ProtectedRoute allowedRoles={["super_admin", "club_admin", "coach", "athlete"]} />}>
           <Route path="/ai-coach" element={<AuthenticatedLayout />}>
-            <Route index element={<CoachAiRoute />} />
+            <Route index element={<AICoachRoute />} />
           </Route>
           <Route path="/elite" element={<AuthenticatedLayout />}>
             <Route index element={<ProfessionalWorkspaceRoute kind="elite" />} />
@@ -156,7 +158,13 @@ function AthleteDashboard() {
 
 function CoachAiRoute() {
   const { user } = useAppShell();
-  return <CoachPage user={user} />;
+  const { profile } = useAppShell();
+  return <AICoachPage user={user} profile={profile} />;
+}
+
+function AICoachRoute() {
+  const { user, profile } = useAppShell();
+  return <AICoachPage user={user} profile={profile} />;
 }
 
 function HistoryRoute() {
@@ -194,6 +202,10 @@ function ProfessionalWorkspaceRoute({ kind }: { kind: ProfessionalKind }) {
   return <ProfessionalWorkspacePage kind={kind} />;
 }
 
+function ClubWorkspaceRoute({ section }: { section: ClubSection }) {
+  return <ClubWorkspacePage section={section} />;
+}
+
 function professionalKindForCoachPath(path: string): ProfessionalKind {
   if (path === "analyses" || path === "rapports") return "elite";
   if (path === "reports") return "elite";
@@ -202,11 +214,17 @@ function professionalKindForCoachPath(path: string): ProfessionalKind {
   return "coach";
 }
 
-function professionalKindForClubPath(path: string): ProfessionalKind {
-  if (path === "matchs" || path === "matches" || path === "equipes" || path === "teams") return "match";
-  if (path === "performances" || path === "performance" || path === "rapports" || path === "reports") return "elite";
-  if (path === "parametres" || path === "settings") return "ecosystem";
-  return "club";
+function clubSectionForPath(path: string): ClubSection {
+  if (path === "players" || path === "joueurs") return "players";
+  if (path === "coaches" || path === "coachs") return "coaches";
+  if (path === "teams" || path === "equipes") return "teams";
+  if (path === "matches" || path === "matchs") return "matches";
+  if (path === "attendance" || path === "presences") return "attendance";
+  if (path === "training" || path === "entrainements") return "training";
+  if (path === "performance" || path === "performances") return "performance";
+  if (path === "reports" || path === "rapports") return "reports";
+  if (path === "settings" || path === "parametres") return "settings";
+  return "dashboard";
 }
 
 function professionalKindForAdminPath(path: string): ProfessionalKind {

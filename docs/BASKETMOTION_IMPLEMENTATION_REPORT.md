@@ -37,29 +37,37 @@ Completed:
 
 - Added final route aliases for players, coaches, teams, matches, training, performance, reports, and settings.
 - Added club documentation.
+- Added dedicated Club Workspace page.
+- Added local club service for dashboard snapshots, metrics, filters, generated reports, CSV export, and JSON export.
+- Added Club Platform tests.
 
 Partial:
 
-- Club pages use the professional workspace preview.
+- Club pages use local-first data until Firestore club collections are connected.
 
 Remaining:
 
 - Firestore-backed club management and exports.
+- PDF report export.
 
 ## AI Coach
 
 Engine:
 
-- Local rule-based engine.
+- Local rule-based v4 engine in `src/ai-coach/aiCoachEngine.ts`.
 
 Rules:
 
-- Generates release-speed recommendations only when observed release timing and confidence are sufficient.
+- Uses observed sessions, shot volume, confidence, objective, position, equipment, and weekly frequency.
+- Generates a weekly training plan only from local rule output.
+- Returns `insufficient_data` and no drills when observed data is below threshold.
 
 Limits:
 
 - No generic chatbot.
 - No recommendation from insufficient data.
+- No arbitrary potential score.
+- No medical diagnosis.
 
 ## Elite Analytics
 
