@@ -9,3 +9,7 @@
 ## Direction
 
 Keep the web/PWA as primary. Prepare `/mobile` architecture with shared analysis services and no duplicated AI engine.
+
+## Sprint 8
+
+`/mobile` now opens the Native / Research preview page. Capacitor remains the preferred wrapper candidate, but native packaging requires signing, permissions, and real device testing configuration.

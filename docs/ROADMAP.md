@@ -57,7 +57,12 @@
 
 ## Sprint 8 - Native / Research
 
-- Prepare mobile, desktop, wearables, and research preview modules.
+- Added local Native / Research service.
+- Added dedicated Native / Research page for `/research`, `/mobile`, and `/desktop`.
+- Mobile, desktop, PWA, and wearable targets show preview or requires-configuration states.
+- Research modules include multi-camera 3D reconstruction, markerless 3D pose, explainable AI, coach validation mode, anonymized analytics, and federated learning.
+- Device benchmark plan lists metrics that must be measured on real devices.
+- Remaining: Capacitor/Tauri projects, signing pipelines, provider bridges, validated datasets, and privacy-approved research exports.
 
 ## Validation Policy
 

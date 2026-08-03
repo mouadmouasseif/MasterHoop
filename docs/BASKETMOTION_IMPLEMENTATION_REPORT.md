@@ -126,6 +126,14 @@ Mobile/Desktop/Wearables/Cloud/Tournament/Marketplace:
 - Tournament leaderboard, marketplace catalog, weekly training generator, provider readiness, and cloud job preview added.
 - Tests added for tournament ranking, training generation, and integration configuration states.
 
+Native / Research:
+
+- Local Native / Research service added in `src/native-research/nativeResearchService.ts`.
+- Dedicated preview page added for `/research`, `/mobile`, and `/desktop`.
+- Mobile, desktop, PWA, and wearable targets expose preview or requires-configuration states.
+- Research modules documented for multi-camera 3D reconstruction, markerless 3D pose, explainable AI, coach validation, anonymized analytics, and federated learning.
+- Tests added for native readiness and research promotion guardrails.
+
 ## Tests
 
 Required scripts:
