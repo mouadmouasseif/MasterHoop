@@ -8,7 +8,7 @@ let environment: RulesTestEnvironment;
 
 beforeAll(async () => {
   environment = await initializeTestEnvironment({
-    projectId: "BasketMotion-Ai-rules-test",
+    projectId: "basketmotion-rules-test",
     firestore: { rules: readFileSync("firestore.rules", "utf8") },
     storage: { rules: readFileSync("storage.rules", "utf8") },
   });

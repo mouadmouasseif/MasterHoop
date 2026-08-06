@@ -134,6 +134,27 @@ Native / Research:
 - Research modules documented for multi-camera 3D reconstruction, markerless 3D pose, explainable AI, coach validation, anonymized analytics, and federated learning.
 - Tests added for native readiness and research promotion guardrails.
 
+## Backend Sync
+
+Persistence:
+
+- Shared backend sync service added in `src/backend-sync/backendSyncService.ts`.
+- Sync envelopes added for coach comments, drawings, training plans, AI Coach plans, club snapshots, club reports, scouting reports, elite reports, match reports, tournaments, and marketplace drafts.
+- Failed writes are queued locally in `basketmotion:backend-sync:queue`.
+
+Security:
+
+- Firestore rules extended for new Sprint 9 collections.
+- Coach writes require coach ownership.
+- Club scoped writes require club admin scope.
+- Super admins can manage backend sync documents.
+
+Remaining:
+
+- Replay UI for queued offline writes.
+- PDF report generation and Storage upload.
+- Production Firestore indexes and expanded emulator tests.
+
 ## Tests
 
 Required scripts:

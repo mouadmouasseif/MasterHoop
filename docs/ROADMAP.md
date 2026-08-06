@@ -64,6 +64,14 @@
 - Device benchmark plan lists metrics that must be measured on real devices.
 - Remaining: Capacitor/Tauri projects, signing pipelines, provider bridges, validated datasets, and privacy-approved research exports.
 
+## Sprint 9 - Backend Persistence / Real Data Sync
+
+- Added shared backend sync service for coach, club, AI Coach, Elite, Match, Tournament, and Marketplace documents.
+- Added Firestore sync envelopes with owner, athlete, coach, club, validation status, payload, and timestamps.
+- Added offline fallback queue for failed backend writes.
+- Added Firestore rules for new v4 persistence collections.
+- Remaining: replay UI for queued writes, PDF export upload flow, production indexes, and expanded emulator coverage.
+
 ## Validation Policy
 
 After each sprint, run the available scripts:

@@ -37,6 +37,22 @@ service cloud.firestore {
         || request.auth.uid in get(/databases/$(database)/documents/teams/$(teamId)).data.get('adminUids', [])
       );
     }
+    function isEnvelopeOwner(data) { return activeAccount() && data.get('ownerId', '') == request.auth.uid; }
+    function isEnvelopeCoach(data) { return activeAccount() && claimRole() == 'coach' && data.get('coachId', '') == request.auth.uid; }
+    function isEnvelopeClubAdmin(data) { return activeAccount() && claimRole() == 'club_admin' && isClubAdmin(data.get('clubId', '')); }
+    function canReadEnvelope(data) {
+      return isEnvelopeOwner(data)
+        || isEnvelopeCoach(data)
+        || isEnvelopeClubAdmin(data)
+        || isAssignedCoach(data.get('athleteId', ''))
+        || isSuperAdmin();
+    }
+    function immutableEnvelopeScope() {
+      return request.resource.data.get('ownerId', '') == resource.data.get('ownerId', '')
+        && request.resource.data.get('athleteId', '') == resource.data.get('athleteId', '')
+        && request.resource.data.get('coachId', '') == resource.data.get('coachId', '')
+        && request.resource.data.get('clubId', '') == resource.data.get('clubId', '');
+    }
 
     match /users/{userId} {
       allow get: if isOwner(userId) || isSuperAdmin()
@@ -107,7 +123,31 @@ service cloud.firestore {
     match /trainings/{id} { allow read: if canReadAthleteData(resource.data); allow create: if isOwner(ownerOf(request.resource.data)); allow update: if immutableOwnership() && isOwner(ownerOf(resource.data)); allow delete: if isOwner(ownerOf(resource.data)); }
     match /userProfiles/{userId} { allow read, create, update, delete: if isOwner(userId); }
 
-    match /clubs/{clubId} { allow read: if activeAccount() && (claimClubId() == clubId || isSuperAdmin()); allow write: if isSuperAdmin() || isClubAdmin(clubId); }
+    match /clubs/{clubId} {
+      allow read: if activeAccount() && (claimClubId() == clubId || isSuperAdmin());
+      allow write: if isSuperAdmin() || isClubAdmin(clubId);
+
+      match /snapshots/{snapshotId} {
+        allow read: if activeAccount() && (claimClubId() == clubId || isSuperAdmin());
+        allow create, update: if isSuperAdmin() || (isClubAdmin(clubId) && request.resource.data.get('clubId', clubId) == clubId);
+        allow delete: if isSuperAdmin() || isClubAdmin(clubId);
+      }
+
+      match /reports/{reportId} {
+        allow read: if activeAccount() && (claimClubId() == clubId || isSuperAdmin());
+        allow create, update: if isSuperAdmin() || (isClubAdmin(clubId) && request.resource.data.get('clubId', clubId) == clubId);
+        allow delete: if isSuperAdmin() || isClubAdmin(clubId);
+      }
+    }
+    match /coachComments/{id} { allow read: if canReadEnvelope(resource.data); allow create: if isEnvelopeCoach(request.resource.data); allow update: if immutableEnvelopeScope() && isEnvelopeCoach(resource.data); allow delete: if isEnvelopeCoach(resource.data) || isSuperAdmin(); }
+    match /coachDrawings/{id} { allow read: if canReadEnvelope(resource.data); allow create: if isEnvelopeCoach(request.resource.data); allow update: if immutableEnvelopeScope() && isEnvelopeCoach(resource.data); allow delete: if isEnvelopeCoach(resource.data) || isSuperAdmin(); }
+    match /trainingPlans/{id} { allow read: if canReadEnvelope(resource.data); allow create: if isEnvelopeCoach(request.resource.data); allow update: if immutableEnvelopeScope() && isEnvelopeCoach(resource.data); allow delete: if isEnvelopeCoach(resource.data) || isSuperAdmin(); }
+    match /aiCoachPlans/{id} { allow read: if canReadEnvelope(resource.data); allow create: if isEnvelopeOwner(request.resource.data) || isEnvelopeCoach(request.resource.data); allow update: if immutableEnvelopeScope() && (isEnvelopeOwner(resource.data) || isEnvelopeCoach(resource.data)); allow delete: if isEnvelopeOwner(resource.data) || isEnvelopeCoach(resource.data) || isSuperAdmin(); }
+    match /scoutingReports/{id} { allow read: if canReadEnvelope(resource.data); allow create: if isEnvelopeOwner(request.resource.data) || isEnvelopeCoach(request.resource.data); allow update: if immutableEnvelopeScope() && (isEnvelopeOwner(resource.data) || isEnvelopeCoach(resource.data)); allow delete: if isEnvelopeOwner(resource.data) || isEnvelopeCoach(resource.data) || isSuperAdmin(); }
+    match /eliteReports/{id} { allow read: if canReadEnvelope(resource.data); allow create: if isEnvelopeOwner(request.resource.data) || isEnvelopeCoach(request.resource.data); allow update: if immutableEnvelopeScope() && (isEnvelopeOwner(resource.data) || isEnvelopeCoach(resource.data)); allow delete: if isEnvelopeOwner(resource.data) || isEnvelopeCoach(resource.data) || isSuperAdmin(); }
+    match /matchReports/{id} { allow read: if canReadEnvelope(resource.data) || isParticipant(resource.data.get('payload', {})); allow create: if isEnvelopeOwner(request.resource.data) || isEnvelopeClubAdmin(request.resource.data); allow update: if immutableEnvelopeScope() && (isEnvelopeOwner(resource.data) || isEnvelopeClubAdmin(resource.data)); allow delete: if isEnvelopeOwner(resource.data) || isEnvelopeClubAdmin(resource.data) || isSuperAdmin(); }
+    match /tournaments/{id} { allow read: if activeAccount(); allow create, update: if isSuperAdmin() || isEnvelopeClubAdmin(request.resource.data); allow delete: if isSuperAdmin() || isEnvelopeClubAdmin(resource.data); }
+    match /marketplaceDrafts/{id} { allow read: if canReadEnvelope(resource.data); allow create: if activeAccount() && (claimRole() in ['coach', 'club_admin', 'super_admin']); allow update: if immutableEnvelopeScope() && (isEnvelopeOwner(resource.data) || isEnvelopeCoach(resource.data) || isEnvelopeClubAdmin(resource.data) || isSuperAdmin()); allow delete: if isEnvelopeOwner(resource.data) || isEnvelopeCoach(resource.data) || isEnvelopeClubAdmin(resource.data) || isSuperAdmin(); }
     match /modelRegistry/{id} { allow read: if activeAccount(); allow write: if isSuperAdmin(); }
     match /auditLogs/{id} { allow read: if isSuperAdmin(); allow write: if false; }
     match /consents/{id} {
