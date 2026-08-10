@@ -5,7 +5,8 @@ import { analyzeUploadedVideo, type AIAnalysisResult } from "@/src/services/aiAn
 import { saveTrainingSession } from "@/src/services/sessionService";
 import AIAnalyticsPanel from "@/src/components/AIAnalyticsPanel";
 
-const MAX_SIZE = 200 * 1024 * 1024;
+const MAX_SIZE_GB = 5;
+const MAX_SIZE = MAX_SIZE_GB * 1024 * 1024 * 1024;
 const MAX_DURATION = 120;
 const ACCEPTED_TYPES = ["video/mp4", "video/quicktime", "video/webm"];
 
@@ -25,8 +26,8 @@ export default function VideoUploader({
   const [isProcessing, setIsProcessing] = useState(false);
 
   const helperText = useMemo(() => {
-    if (!file) return "MP4, MOV, or WebM. Max 200MB and 2 minutes.";
-    return `${file.name} - ${(file.size / 1024 / 1024).toFixed(1)}MB`;
+    if (!file) return `MP4, MOV, or WebM. Max ${MAX_SIZE_GB}GB and 2 minutes.`;
+    return `${file.name} - ${(file.size / 1024 / 1024 / 1024).toFixed(2)}GB`;
   }, [file]);
 
   const reset = () => {
@@ -62,7 +63,7 @@ export default function VideoUploader({
       return;
     }
     if (nextFile.size > MAX_SIZE) {
-      setError("Video is too large. Maximum size is 200MB.");
+      setError(`Video is too large. Maximum size is ${MAX_SIZE_GB}GB.`);
       return;
     }
 

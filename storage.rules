@@ -22,20 +22,27 @@ service firebase.storage {
         || request.resource.contentType == 'text/csv';
     }
     function safeUpload(maxMb) { return request.resource.size > 0 && request.resource.size < maxMb * 1024 * 1024 && isAllowedContentType(); }
+    function safeTrainingVideoUpload() {
+      return request.resource.size > 0
+        && request.resource.size < 5 * 1024 * 1024 * 1024
+        && request.resource.contentType.matches('video/(mp4|quicktime|webm)');
+    }
     function canReadAthleteFile(athleteId) {
       return isOwner(athleteId) || isAssignedCoach(athleteId) || isSuperAdmin() || isClubAdmin(resource.metadata.clubId);
     }
 
     match /users/{userId}/sessions/{sessionId}/{allPaths=**} {
       allow read: if canReadAthleteFile(userId);
-      allow create: if isOwner(userId) && safeUpload(220) && request.resource.metadata.ownerId == userId;
+      allow create: if isOwner(userId) && request.resource.metadata.ownerId == userId
+        && (safeUpload(220) || safeTrainingVideoUpload());
       allow update: if false;
       allow delete: if isOwner(userId) || isSuperAdmin();
     }
 
     match /analyses/{athleteId}/{analysisId}/{allPaths=**} {
       allow read: if canReadAthleteFile(athleteId);
-      allow create: if isOwner(athleteId) && safeUpload(220) && request.resource.metadata.ownerId == athleteId;
+      allow create: if isOwner(athleteId) && request.resource.metadata.ownerId == athleteId
+        && (safeUpload(220) || safeTrainingVideoUpload());
       allow update: if false;
       allow delete: if isOwner(athleteId) || isSuperAdmin();
     }
@@ -49,7 +56,8 @@ service firebase.storage {
 
     match /highlights/{userId}/{allPaths=**} {
       allow read: if isOwner(userId) || isAssignedCoach(userId);
-      allow create: if isOwner(userId) && safeUpload(220) && request.resource.metadata.ownerId == userId;
+      allow create: if isOwner(userId) && request.resource.metadata.ownerId == userId
+        && (safeUpload(220) || safeTrainingVideoUpload());
       allow update: if false;
       allow delete: if isOwner(userId);
     }
