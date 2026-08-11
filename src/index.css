@@ -54,3 +54,46 @@
 .neon-green-shadow {
   box-shadow: 0 0 20px rgba(0, 255, 148, 0.2);
 }
+
+.rowmotion-login-panel {
+  box-sizing: border-box;
+  width: min(100%, calc(100vw - 64px));
+  margin-inline: auto;
+}
+
+@media (min-width: 640px) {
+  .rowmotion-login-panel {
+    width: 100%;
+  }
+}
+
+@keyframes rowmotionFadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes rowmotionCardIn {
+  from {
+    opacity: 0;
+    transform: translateX(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 1ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: 1ms !important;
+  }
+}
