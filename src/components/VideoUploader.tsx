@@ -7,7 +7,8 @@ import AIAnalyticsPanel from "@/src/components/AIAnalyticsPanel";
 
 const MAX_SIZE_GB = 5;
 const MAX_SIZE = MAX_SIZE_GB * 1024 * 1024 * 1024;
-const MAX_DURATION = 120;
+const MAX_DURATION_MINUTES = 60;
+const MAX_DURATION = MAX_DURATION_MINUTES * 60;
 const ACCEPTED_TYPES = ["video/mp4", "video/quicktime", "video/webm"];
 
 export default function VideoUploader({
@@ -26,7 +27,7 @@ export default function VideoUploader({
   const [isProcessing, setIsProcessing] = useState(false);
 
   const helperText = useMemo(() => {
-    if (!file) return `MP4, MOV, or WebM. Max ${MAX_SIZE_GB}GB and 2 minutes.`;
+    if (!file) return `MP4, MOV, or WebM. Max ${MAX_SIZE_GB}GB and ${MAX_DURATION_MINUTES} minutes.`;
     return `${file.name} - ${(file.size / 1024 / 1024 / 1024).toFixed(2)}GB`;
   }, [file]);
 
@@ -46,7 +47,7 @@ export default function VideoUploader({
       video.preload = "metadata";
       video.onloadedmetadata = () => {
         URL.revokeObjectURL(url);
-        if (video.duration > MAX_DURATION) reject(new Error("Video must be 2 minutes or less."));
+        if (video.duration > MAX_DURATION) reject(new Error(`Video must be ${MAX_DURATION_MINUTES} minutes or less.`));
         else resolve();
       };
       video.onerror = () => reject(new Error("Unable to read this video."));
