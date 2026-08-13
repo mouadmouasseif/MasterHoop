@@ -38,6 +38,9 @@ export default defineConfig(() => {
           ],
         },
         workbox: {
+          cleanupOutdatedCaches: true,
+          clientsClaim: true,
+          skipWaiting: true,
           navigateFallback: '/index.html',
           globPatterns: ['**/*.{js,css,html,png,svg,ico,webmanifest}'],
           globIgnores: ['**/opencv-*.js'],
