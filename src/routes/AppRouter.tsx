@@ -31,6 +31,7 @@ const EliteAnalyticsPage = lazy(() => import("@/src/pages/EliteAnalyticsPage"));
 const MatchIntelligencePage = lazy(() => import("@/src/pages/MatchIntelligencePage"));
 const EcosystemPage = lazy(() => import("@/src/pages/EcosystemPage"));
 const NativeResearchPage = lazy(() => import("@/src/pages/NativeResearchPage"));
+const BasketballVideoAnalysis = lazy(() => import("@/src/pages/BasketballVideoAnalysis"));
 
 const coachPaths = ["athletes", "analyses", "compare", "drills", "exercices", "missions", "training-plans", "programmes", "equipes", "reports", "rapports", "notifications"];
 const clubPaths = ["players", "joueurs", "coaches", "coachs", "teams", "equipes", "matches", "matchs", "attendance", "presences", "performance", "performances", "training", "entrainements", "reports", "rapports", "settings", "parametres"];
@@ -55,7 +56,7 @@ export default function AppRouter() {
             <Route index element={<AthleteDashboard />} />
             <Route path="analyse" element={<HistoryRoute />} />
             <Route path="analyse/nouvelle" element={<LiveTrainingRoute />} />
-            <Route path="analyse/:analysisId" element={<PlannedWorkspacePage title="Detail de l'analyse" sprint="le Sprint 3 (timeline et explicabilite)" />} />
+            <Route path="analyse/:analysisId" element={<BasketballVideoAnalysis />} />
             <Route path="progression" element={<AthleteDashboard />} />
             <Route path="entrainements" element={<DrillsRoute />} />
             <Route path="matchs" element={<GameModesRoute />} />
@@ -78,7 +79,7 @@ export default function AppRouter() {
               </Fragment>
             ))}
             <Route path="athletes/:athleteId" element={<ProfessionalWorkspaceRoute kind="coach" />} />
-            <Route path="analyses/:analysisId" element={<ProfessionalWorkspaceRoute kind="elite" />} />
+            <Route path="analyses/:analysisId" element={<BasketballVideoAnalysis />} />
           </Route>
         </Route>
 
@@ -136,6 +137,9 @@ export default function AppRouter() {
           </Route>
           <Route path="/research" element={<AuthenticatedLayout />}>
             <Route index element={<NativeResearchPage />} />
+          </Route>
+          <Route path="/analyses" element={<AuthenticatedLayout />}>
+            <Route path=":analysisId" element={<BasketballVideoAnalysis />} />
           </Route>
           <Route path="/mobile" element={<AuthenticatedLayout />}>
             <Route index element={<NativeResearchPage />} />
