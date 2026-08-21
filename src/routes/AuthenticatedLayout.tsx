@@ -96,6 +96,10 @@ export default function AuthenticatedLayout() {
   if (!user || !profile || !shellState) return null;
 
   const hasMobileSubnav = ["games", "friends", "teams", "leaderboard", "notifications"].includes(activeTab);
+  const isAnalysisDetail =
+    /^\/app\/analyse\/[^/]+/.test(location.pathname) ||
+    /^\/coach\/analyses\/[^/]+/.test(location.pathname) ||
+    /^\/analyses\/[^/]+/.test(location.pathname);
 
   const saveProfile = async (data: Partial<UserProfile>) => {
     const nextProfile: UserProfile = {
@@ -140,10 +144,10 @@ export default function AuthenticatedLayout() {
         {profile.role === "athlete"
           ? <Sidebar activeTab={activeTab} setActiveTab={handleTabChange} isImmersive={isImmersive} setIsImmersive={setIsImmersive} />
           : <RoleSidebar role={profile.role} />}
-        <main className={`min-w-0 flex-1 overflow-y-auto overflow-x-hidden p-4 md:p-8 ${hasMobileSubnav ? "pt-32" : "pt-24"} md:pt-8`}>
-          <Navbar activeTab={activeTab} user={user} profile={profile} walletAddress={null} isImmersive={isImmersive} onOpenProfile={() => setShowProfileModal(true)} onDisconnectWallet={() => undefined} />
+        <main className={`min-w-0 flex-1 overflow-y-auto overflow-x-hidden ${isAnalysisDetail ? "p-0 pb-20 md:pb-0" : `p-4 md:p-8 ${hasMobileSubnav ? "pt-32" : "pt-24"} md:pt-8`}`}>
+          {!isAnalysisDetail && <Navbar activeTab={activeTab} user={user} profile={profile} walletAddress={null} isImmersive={isImmersive} onOpenProfile={() => setShowProfileModal(true)} onDisconnectWallet={() => undefined} />}
           <Outlet />
-          {!isImmersive && <Footer />}
+          {!isImmersive && !isAnalysisDetail && <Footer />}
         </main>
         <AnimatePresence>
           {showProfileModal && <CompleteProfile user={user} profile={profile} onClose={() => profileExists && setShowProfileModal(false)} onSave={saveProfile} />}

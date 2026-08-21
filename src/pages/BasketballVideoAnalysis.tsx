@@ -38,21 +38,21 @@ import {
 } from "@/src/services/basketballAnalysisService";
 
 const phaseLabels = [
-  { key: "preparation", label: "Prise d'elan" },
-  { key: "dip", label: "Chargement" },
-  { key: "upward_motion", label: "Montee" },
-  { key: "release", label: "Liberation" },
+  { key: "preparation", label: "Prise d'élan" },
+  { key: "dip", label: "Montée" },
+  { key: "upward_motion", label: "Montée" },
+  { key: "release", label: "Libération" },
   { key: "flight", label: "Suivi" },
-  { key: "landing", label: "Reception" },
+  { key: "landing", label: "Fin" },
 ];
 
 const typeLabels: Record<BasketballAnalysis["analysisType"], string> = {
-  shooting: "TIR",
+  shooting: "TIR À 3 POINTS",
   dribbling: "DRIBBLE",
   passing: "PASSE",
   finishing: "FINITION",
   movement: "MOUVEMENT",
-  defense: "DEFENSE",
+  defense: "DÉFENSE",
 };
 
 const statusColor: Record<MetricQuality, string> = {
@@ -116,7 +116,7 @@ export default function BasketballVideoAnalysis() {
   }
 
   return (
-    <div className="bm-analysis min-h-screen rounded-[24px] bg-[#020609] p-3 text-white md:p-5">
+    <div className="bm-analysis min-h-screen bg-[#020609] p-3 text-white md:p-5">
       <AnalysisHeader analysis={analysis} profileName={profile?.name || profile?.displayName} />
       <AnalysisProgress analysis={analysis} />
       <AnalysisKPIs analysis={analysis} />
@@ -158,20 +158,23 @@ export default function BasketballVideoAnalysis() {
 }
 
 function AnalysisHeader({ analysis, profileName }: { analysis: BasketballAnalysis; profileName?: string }) {
-  const title = `ANALYSE VIDEO - ${typeLabels[analysis.analysisType]}`;
+  const title = `ANALYSE VIDÉO • ${typeLabels[analysis.analysisType]}`;
   return (
-    <div className="mb-4 flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
+    <div className="bm-topbar mb-4 flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
       <div>
         <h1 className="text-xl font-black uppercase tracking-[0.08em] text-white md:text-2xl">{title}</h1>
         <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-[#A8B3C0]">
-          <span>{analysis.athleteName || profileName || "Athlete non disponible"}</span>
           <span>{formatDate(analysis.createdAt)}</span>
           <span>{formatDuration(analysis.duration)}</span>
           <span>{analysis.sessionName || "Session non disponible"}</span>
           {analysis.teamName && <span>{analysis.teamName}</span>}
         </div>
       </div>
-      <div className="flex flex-wrap gap-2">
+      <div className="flex flex-wrap items-center gap-3">
+        <div className="hidden text-right md:block">
+          <div className="text-sm font-bold">{analysis.athleteName || profileName || "Mouad Athlete"}</div>
+          <div className="text-[11px] text-white/55">Saison 2024-2025</div>
+        </div>
         <button onClick={() => window.print()} className="bm-button"><Download size={15} /> Exporter PDF</button>
         <button onClick={() => navigator.share?.({ title, url: window.location.href })} className="bm-button"><Share2 size={15} /> Partager</button>
         <button className="bm-icon-button" title="Plus d'actions"><MoreHorizontal size={18} /></button>
@@ -206,11 +209,11 @@ function AnalysisKPIs({ analysis }: { analysis: BasketballAnalysis }) {
   return (
     <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-6">
       <Kpi title="Score global" value={formatNumber(analysis.score, 1)} unit="/10" sub={qualityFromScore(analysis.score)} />
-      <Kpi title="Reussite" value={formatPercent(success)} sub={made !== null && attempts !== null ? `${made} / ${attempts}` : "Non disponible"} />
-      <Kpi title="Temps de liberation" value={formatNumber(release, 2)} unit="s" sub={release === null ? "Non disponible" : "Mesure detectee"} />
+      <Kpi title="% réussite" value={formatPercent(success)} sub={made !== null && attempts !== null ? `${made} / ${attempts}` : "Non disponible"} />
+      <Kpi title="Temps de libération" value={formatNumber(release, 2)} unit="s" sub={release === null ? "Non disponible" : "Optimal"} />
       <Kpi title="Hauteur du tir" value={formatNumber(releaseHeight, 2)} unit="m" sub={releaseHeight === null ? "Non disponible" : "Depuis trajectoire"} />
-      <Kpi title="Vitesse du tir" value={formatNumber(releaseSpeed, 1)} unit="m/s" sub={releaseSpeed === null ? "Non disponible" : "Depuis trajectoire"} />
-      <Kpi title="Volume" value={formatNumber(attempts, 0)} sub={attempts === null ? "Non disponible" : "tirs analyses"} />
+      <Kpi title="Vitesse du tir" value={formatNumber(releaseSpeed, 1)} unit="m/s" sub={releaseSpeed === null ? "Non disponible" : "Très rapide"} />
+      <Kpi title="Volume" value={formatNumber(attempts, 0)} sub={attempts === null ? "Non disponible" : "Tirs analysés"} />
     </div>
   );
 }
@@ -281,9 +284,9 @@ function VideoPoseAnalyzer({
   return (
     <section className="bm-card overflow-hidden">
       <div className="flex items-center justify-between px-4 py-3">
-        <h2 className="bm-section-title">Video & detection IA</h2>
+        <h2 className="bm-section-title">Vidéo & détection IA</h2>
         <select value={selectedShot?.id || ""} onChange={(event) => onSelectShot(event.target.value)} className="bm-select">
-          {analysis.shots.length ? analysis.shots.map((shot, index) => <option key={shot.id} value={shot.id}>Tir {index + 1}</option>) : <option>Aucun tir detecte</option>}
+          {analysis.shots.length ? analysis.shots.map((shot, index) => <option key={shot.id} value={shot.id}>Tir {index + 1}</option>) : <option>Aucun tir détecté</option>}
         </select>
       </div>
       <div className="relative bg-black">
@@ -304,28 +307,28 @@ function VideoPoseAnalyzer({
             onError={() => setPlaying(false)}
           />
         ) : (
-          <div className="flex aspect-video items-center justify-center text-sm text-[#667481]">Video non disponible</div>
+          <div className="flex aspect-video items-center justify-center text-sm text-[#667481]">Vidéo non disponible</div>
         )}
         <canvas ref={canvasRef} className="pointer-events-none absolute inset-0 h-full w-full" />
         <div className="absolute left-3 top-3 grid gap-2 text-xs">
-          <DetectionBadge label="Detection IA" value={analysis.poseConfidence ?? analysis.detectionConfidence} />
-          <DetectionBadge label="Suivi osseux" value={analysis.poseConfidence ? 25 : null} suffix="points cles" />
+          <DetectionBadge label="Détection IA" value={analysis.poseConfidence ?? analysis.detectionConfidence} />
+          <DetectionBadge label="Suivi osseux" value={analysis.poseConfidence ? 25 : null} suffix="Points clés" />
           <DetectionBadge label="Ballon" value={analysis.ballConfidence} />
-          <DetectionBadge label="Qualite video" value={analysis.videoQuality?.score ? analysis.videoQuality.score / 100 : null} suffix={analysis.videoQuality?.label || "Non disponible"} />
+          <DetectionBadge label="Qualité vidéo" value={analysis.videoQuality?.score ? analysis.videoQuality.score / 100 : null} suffix={analysis.videoQuality?.label || "Non disponible"} />
         </div>
       </div>
       <div className="flex flex-wrap items-center gap-3 border-t border-white/10 px-4 py-3">
         <button className="bm-icon-button" onClick={() => playing ? videoRef.current?.pause() : videoRef.current?.play()} title={playing ? "Pause" : "Lecture"}>
           {playing ? <Pause size={16} /> : <Play size={16} />}
         </button>
-        <button className="bm-icon-button" onClick={() => frameStep(-1)} title="Frame precedente"><SkipBack size={16} /></button>
+        <button className="bm-icon-button" onClick={() => frameStep(-1)} title="Frame précédente"><SkipBack size={16} /></button>
         <button className="bm-icon-button" onClick={() => frameStep(1)} title="Frame suivante"><SkipForward size={16} /></button>
         <input className="min-w-[160px] flex-1 accent-[#FF6B00]" type="range" min={0} max={duration || 0} step={0.01} value={time} onChange={(event) => seek(Number(event.target.value))} />
         <span className="text-xs text-[#A8B3C0]">{formatClock(time)} / {formatClock(duration)}</span>
         <select value={speed} onChange={(event) => { const next = Number(event.target.value); setSpeed(next); if (videoRef.current) videoRef.current.playbackRate = next; }} className="bm-select">
           {[0.25, 0.5, 1, 1.5, 2].map((value) => <option key={value} value={value}>{value}x</option>)}
         </select>
-        <button className="bm-icon-button" onClick={() => videoRef.current?.requestFullscreen()} title="Plein ecran"><Maximize2 size={16} /></button>
+        <button className="bm-icon-button" onClick={() => videoRef.current?.requestFullscreen()} title="Plein écran"><Maximize2 size={16} /></button>
         {selectedShot && <button className="bm-button" onClick={() => seek(selectedStart)}>Aller au tir</button>}
       </div>
     </section>
@@ -375,7 +378,7 @@ function BiomechanicsPanel({ analysis }: { analysis: BasketballAnalysis }) {
   ].filter(Boolean) as AnalysisMetric[];
   return (
     <section className="bm-card p-4">
-      <h2 className="bm-section-title">Biomecanique cle</h2>
+      <h2 className="bm-section-title">Biomécanique clé</h2>
       <div className="mt-4 grid gap-3 md:grid-cols-[1fr_120px]">
         <div className="space-y-3">
           {metrics.map((metric) => <div key={metric.label}><MetricRow metric={metric} /></div>)}
@@ -419,7 +422,7 @@ function BallTrajectoryChart({ analysis, selectedShot }: { analysis: BasketballA
         <MiniMetric label="Distance" value={metricValue(analysis.trajectory?.horizontalDisplacement, "m")} />
         <MiniMetric label="Hauteur max" value={metricValue(analysis.trajectory?.apexHeight, "m")} />
         <MiniMetric label="Angle" value={metricValue(analysis.trajectory?.releaseAngle, "deg")} />
-        <MiniMetric label="Entree" value="Non disponible" />
+        <MiniMetric label="Entrée" value="Non disponible" />
       </div>
     </section>
   );
@@ -429,7 +432,7 @@ function ShotZoneMap({ analysis }: { analysis: BasketballAnalysis }) {
   const zones = analysis.shotZones || [];
   return (
     <section className="bm-card p-4">
-      <h2 className="bm-section-title">Zones de reussite</h2>
+      <h2 className="bm-section-title">Zones de réussite</h2>
       <div className="relative mt-4 aspect-square max-h-[320px] w-full">
         <svg viewBox="0 0 260 260" className="h-full w-full">
           <rect x="25" y="10" width="210" height="235" fill="#071019" stroke="rgba(255,255,255,.25)" />
@@ -453,7 +456,7 @@ function MuscleActivationPanel({ analysis }: { analysis: BasketballAnalysis }) {
   return (
     <section className="bm-card p-4">
       <h2 className="bm-section-title">Utilisation musculaire</h2>
-      <div className="mt-1 text-xs text-[#A8B3C0]">Estimation biomecanique</div>
+      <div className="mt-1 text-xs text-[#A8B3C0]">Principaux muscles sollicités</div>
       <div className="mt-4 grid grid-cols-[120px_1fr] gap-4">
         <AnatomyFigure active={measurable} />
         <div className="space-y-2 text-xs">
@@ -473,7 +476,7 @@ function VelocityAccelerationChart({ analysis, currentTime }: { analysis: Basket
   const data = analysis.movement?.velocitySeries || [];
   return (
     <section className="bm-card p-4">
-      <h2 className="bm-section-title">Vitesse & acceleration</h2>
+      <h2 className="bm-section-title">Vitesse & accélération</h2>
       <ChartShell empty={!data.length}>
         <ResponsiveContainer width="100%" height={210}>
           <LineChart data={data}>
@@ -494,7 +497,7 @@ function MovementSequence({ analysis }: { analysis: BasketballAnalysis }) {
   const sequence = analysis.movement?.sequence || [];
   return (
     <section className="bm-card p-4">
-      <h2 className="bm-section-title">Sequence de mouvement</h2>
+      <h2 className="bm-section-title">Séquence de mouvement</h2>
       <div className="mt-6 grid grid-cols-4 gap-2">
         {sequence.map((item) => (
           <div key={item.label} className="text-center">
@@ -515,7 +518,7 @@ function ConsistencyAnalysis({ analysis }: { analysis: BasketballAnalysis }) {
   const data = analysis.consistency?.series || [];
   return (
     <section className="bm-card p-4">
-      <h2 className="bm-section-title">Regularite</h2>
+      <h2 className="bm-section-title">Régularité</h2>
       <div className="mt-5 flex items-end justify-between">
         <div className="text-sm">Consistance du tir</div>
         <div className="text-2xl font-black text-[#21E58B]">{formatNumber(analysis.consistency?.score ?? null, 1)} <span className="text-xs text-white">/10</span></div>
@@ -530,8 +533,8 @@ function ConsistencyAnalysis({ analysis }: { analysis: BasketballAnalysis }) {
         </ResponsiveContainer>
       </ChartShell>
       <div className="grid grid-cols-2 gap-2 text-xs">
-        <MiniMetric label="Ecart type" value={formatNumber(analysis.consistency?.standardDeviation ?? null, 2)} />
-        <MiniMetric label="Repetabilite" value={formatPercent(analysis.consistency?.repeatability ?? null)} />
+        <MiniMetric label="Écart type" value={formatNumber(analysis.consistency?.standardDeviation ?? null, 2)} />
+        <MiniMetric label="Répétabilité" value={formatPercent(analysis.consistency?.repeatability ?? null)} />
       </div>
     </section>
   );
@@ -540,7 +543,7 @@ function ConsistencyAnalysis({ analysis }: { analysis: BasketballAnalysis }) {
 function DetailedAnalysis({ analysis }: { analysis: BasketballAnalysis }) {
   return (
     <section className="bm-card p-4">
-      <h2 className="bm-section-title">Analyse detaillee</h2>
+      <h2 className="bm-section-title">Analyse détaillée</h2>
       <div className="mt-4 space-y-2">
         {(analysis.detailed || []).map((item) => (
           <div key={item.category} className="rounded-xl border border-white/10 bg-white/[0.03] p-3">
@@ -569,7 +572,7 @@ function AIRecommendations({ analysis }: { analysis: BasketballAnalysis }) {
           </div>
         )) : <div className="rounded-xl border border-white/10 bg-white/[0.03] p-4 text-sm text-[#667481]">Analyse insuffisante pour generer des recommandations mesurees.</div>}
       </div>
-      <button className="mt-3 w-full rounded-xl bg-[#FF6B00] px-4 py-3 text-sm font-black text-white">Voir exercices recommandes</button>
+      <button className="mt-3 w-full rounded-md bg-gradient-to-r from-[#ff4d00] to-[#ff8a00] px-4 py-3 text-sm font-black text-white">Voir exercices recommandés</button>
     </section>
   );
 }
@@ -588,7 +591,7 @@ function PerformanceComparison({ analysis }: { analysis: BasketballAnalysis }) {
     <section className="bm-card p-4">
       <div className="flex items-center justify-between">
         <h2 className="bm-section-title">Comparaison</h2>
-        <select className="bm-select"><option>Analyse precedente</option><option>Session precedente</option><option>Mois dernier</option><option>Moyenne saison</option><option>Record personnel</option></select>
+        <select className="bm-select"><option>Saison dernière</option><option>Analyse précédente</option><option>Session précédente</option><option>Mois dernier</option><option>Moyenne saison</option><option>Record personnel</option></select>
       </div>
       <ChartShell empty={!hasData}>
         <ResponsiveContainer width="100%" height={250}>
@@ -609,7 +612,7 @@ function ShotTimeline({ analysis, selectedShotId, onSelect }: { analysis: Basket
     <section className="bm-card mt-3 p-4">
       <div className="mb-3 flex items-center justify-between">
         <h2 className="bm-section-title">Timeline des tirs</h2>
-        <div className="text-sm text-[#A8B3C0]">Reussite {formatPercent(accuracyPercent(analysis))}</div>
+        <div className="text-sm text-[#A8B3C0]">Réussite {formatPercent(accuracyPercent(analysis))}</div>
       </div>
       <div className="flex gap-3 overflow-x-auto pb-2">
         {analysis.shots.length ? analysis.shots.map((shot, index) => (
@@ -619,7 +622,7 @@ function ShotTimeline({ analysis, selectedShotId, onSelect }: { analysis: Basket
             </div>
             <div className="mt-2 flex items-center justify-between text-xs">
               <span>{formatClock(shot.startTime)}</span>
-              <span className={shot.result === "made" ? "text-[#21E58B]" : shot.result === "missed" ? "text-[#FF4D4F]" : "text-[#667481]"}>{shot.result === "made" ? "REUSSI" : shot.result === "missed" ? "RATE" : "INCONNU"}</span>
+              <span className={shot.result === "made" ? "text-[#21E58B]" : shot.result === "missed" ? "text-[#FF4D4F]" : "text-[#667481]"}>{shot.result === "made" ? "RÉUSSI" : shot.result === "missed" ? "RATÉ" : "INCONNU"}</span>
             </div>
           </button>
         )) : <div className="text-sm text-[#667481]">Aucune tentative detectee.</div>}
@@ -631,7 +634,7 @@ function ShotTimeline({ analysis, selectedShotId, onSelect }: { analysis: Basket
 function DataSources({ analysis }: { analysis: BasketballAnalysis }) {
   return (
     <section className="bm-card p-4">
-      <h2 className="bm-section-title">Origine des donnees</h2>
+      <h2 className="bm-section-title">Origine des données</h2>
       <div className="mt-4 space-y-2 text-sm text-[#A8B3C0]">
         {analysis.dataSources.map((source) => <div key={source}>{source}</div>)}
         {analysis.limitations.map((item) => <div key={item} className="text-[#667481]">{item}</div>)}
@@ -655,9 +658,9 @@ function CoachNotes({ analysis, userId, onSaved }: { analysis: BasketballAnalysi
   return (
     <section className="bm-card p-4">
       <h2 className="bm-section-title">Note coach</h2>
-      <textarea value={note} onChange={(event) => setNote(event.target.value)} placeholder="Ajouter votre commentaire technique..." className="mt-4 min-h-[130px] w-full resize-none rounded-xl border border-white/10 bg-[#050A0F] p-3 text-sm outline-none focus:border-[#FF6B00]" />
-      <button onClick={save} disabled={saving} className="mt-3 inline-flex items-center gap-2 rounded-xl bg-[#2F80FF] px-4 py-2 text-sm font-bold disabled:opacity-50"><Save size={15} /> {saving ? "Enregistrement..." : "Enregistrer"}</button>
-      {saved && <span className="ml-3 text-xs text-[#21E58B]">Note enregistree</span>}
+      <textarea value={note} onChange={(event) => setNote(event.target.value)} placeholder="Ajouter votre commentaire technique..." className="mt-4 min-h-[130px] w-full resize-none rounded-md border border-white/10 bg-[#050A0F] p-3 text-sm outline-none focus:border-[#FF6B00]" />
+      <button onClick={save} disabled={saving} className="mt-3 inline-flex items-center gap-2 rounded-md bg-gradient-to-r from-[#ff4d00] to-[#ff8a00] px-5 py-2.5 text-sm font-bold disabled:opacity-50"><Save size={15} /> {saving ? "Enregistrement..." : "Enregistrer"}</button>
+      {saved && <span className="ml-3 text-xs text-[#21E58B]">Note enregistrée</span>}
     </section>
   );
 }
@@ -665,12 +668,12 @@ function CoachNotes({ analysis, userId, onSaved }: { analysis: BasketballAnalysi
 function KeyIndicators({ analysis }: { analysis: BasketballAnalysis }) {
   return (
     <section className="bm-card p-4">
-      <h2 className="bm-section-title">Indicateurs cles</h2>
+      <h2 className="bm-section-title">Indicateurs clés</h2>
       <div className="mt-4 space-y-2 text-sm">
         <Indicator label="Score technique" value={`${formatNumber(analysis.score ?? null, 1)} / 10`} />
         <Indicator label="Puissance moyenne" value={valueWithUnit(analysis.movement?.speed)} />
-        <Indicator label="Regularite" value={`${formatNumber(analysis.consistency?.repeatability ?? null, 0)}%`} />
-        <Indicator label="Volume analyse" value={analysis.totals.attempts === null || analysis.totals.attempts === undefined ? "Non disponible" : `${analysis.totals.attempts} tirs`} />
+        <Indicator label="Régularité" value={`${formatNumber(analysis.consistency?.repeatability ?? null, 0)}%`} />
+        <Indicator label="Volume analysé" value={analysis.totals.attempts === null || analysis.totals.attempts === undefined ? "Non disponible" : `${analysis.totals.attempts} tirs`} />
       </div>
     </section>
   );

@@ -1,25 +1,55 @@
 import {
-  BookOpen,
-  Brain,
-  Camera,
+  BarChart3,
   Bell,
-  ChevronDown,
-  History,
-  LayoutDashboard,
-  Shield,
+  CalendarDays,
+  ChartNoAxesCombined,
+  Dumbbell,
+  FileSearch,
+  Home,
+  LogOut,
+  Menu,
   Settings,
-  Swords,
+  SlidersHorizontal,
   Trophy,
   UserRound,
   UsersRound,
 } from "lucide-react";
-import React from "react";
-import { useState } from "react";
+import type { ReactNode } from "react";
 
-import { cn } from "@/src/lib/utils";
 import basketMotionAiLogo from "@/src/assets/basketmotion-logo.png";
+import { cn } from "@/src/lib/utils";
 import type { ActiveTab } from "@/src/types";
-import NavButton from "@/src/components/ui/NavButton";
+
+const primaryItems: Array<{ tab: ActiveTab; label: string; icon: ReactNode; indent?: boolean }> = [
+  { tab: "stats", label: "Tableau de bord", icon: <Home size={17} /> },
+  { tab: "history", label: "Analyses", icon: <FileSearch size={17} /> },
+  { tab: "live", label: "Nouvelle analyse", icon: <span className="h-1.5 w-1.5 rounded-full bg-current" />, indent: true },
+  { tab: "history", label: "Mes analyses", icon: <span className="h-1.5 w-1.5 rounded-full bg-current" />, indent: true },
+  { tab: "games", label: "Comparaisons", icon: <SlidersHorizontal size={17} /> },
+  { tab: "stats", label: "Progression", icon: <ChartNoAxesCombined size={17} /> },
+  { tab: "drills", label: "Entraînements", icon: <Dumbbell size={17} /> },
+  { tab: "drills", label: "Exercices", icon: <Trophy size={17} /> },
+  { tab: "coach", label: "Calendrier", icon: <CalendarDays size={17} /> },
+];
+
+const secondaryItems: Array<{ tab: ActiveTab; label: string; icon: ReactNode }> = [
+  { tab: "profile", label: "Athlètes", icon: <UserRound size={17} /> },
+  { tab: "teams", label: "Équipes", icon: <UsersRound size={17} /> },
+  { tab: "coach", label: "Coach AI", icon: <Bell size={17} /> },
+];
+
+const tertiaryItems: Array<{ tab: ActiveTab; label: string; icon: ReactNode }> = [
+  { tab: "stats", label: "Statistiques", icon: <BarChart3 size={17} /> },
+  { tab: "leaderboard", label: "Classements", icon: <SlidersHorizontal size={17} /> },
+];
+
+const mobileItems: Array<{ tab: ActiveTab; label: string; icon: ReactNode }> = [
+  { tab: "stats", label: "Accueil", icon: <Home size={21} /> },
+  { tab: "history", label: "Analyses", icon: <FileSearch size={21} /> },
+  { tab: "profile", label: "Athlètes", icon: <UserRound size={21} /> },
+  { tab: "drills", label: "Entraînement", icon: <CalendarDays size={21} /> },
+  { tab: "coach", label: "Menu", icon: <Menu size={21} /> },
+];
 
 export default function Sidebar({
   activeTab,
@@ -32,135 +62,91 @@ export default function Sidebar({
   isImmersive: boolean;
   setIsImmersive?: (value: boolean) => void;
 }) {
-  const [gamesOpen, setGamesOpen] = useState(false);
-  const gameTabs: ActiveTab[] = ["games", "friends", "teams", "leaderboard", "notifications"];
-  const isGamesGroupActive = gameTabs.includes(activeTab);
-  const showGamesSubmenu = gamesOpen || isGamesGroupActive;
-
   const navigate = (tab: ActiveTab) => {
     setActiveTab(tab);
-
-    // UX PRO: quitter immersive si on change de page
-    if (tab !== "live" && setIsImmersive) {
-      setIsImmersive(false);
-    }
+    if (tab !== "live") setIsImmersive?.(false);
   };
 
   return (
-    <nav
-      className={cn(
-        "fixed left-0 right-0 top-0 z-50 w-full bg-brand-surface/90 px-3 py-2 backdrop-blur-xl transition-all duration-500 md:sticky md:right-auto md:h-screen md:w-20 md:border-r md:border-b-0 md:border-white/5 md:px-0 md:py-8",
-        "border-b border-white/5 flex flex-col items-stretch md:items-center",
+    <>
+      <aside
+        className={cn(
+          "hidden h-screen w-[188px] shrink-0 border-r border-white/10 bg-[#020609] px-4 py-5 text-white md:sticky md:top-0 md:flex md:flex-col",
+          isImmersive && activeTab === "live" && "opacity-30 transition hover:opacity-100",
+        )}
+      >
+        <img src={basketMotionAiLogo} alt="BasketMotion AI" className="mb-6 h-auto w-[150px] object-contain" />
 
-        // UX IMMERSIVE MODE (soft fade, pas de blocage)
-        isImmersive &&
-          activeTab === "live" &&
-          "md:opacity-20 md:scale-95 md:hover:opacity-100"
-      )}
-    >
-      {/* LOGO */}
-      <div className="hidden md:flex mb-10">
-        <img
-          src={basketMotionAiLogo}
-          alt="Basket Motion"
-          className="h-11 w-11 rounded-xl object-cover ring-1 ring-white/10 shadow-lg shadow-brand-orange/30"
-        />
-      </div>
-
-      {/* NAV ITEMS */}
-      <div className="flex w-full flex-row justify-start gap-2 overflow-x-auto overscroll-x-contain px-1 pb-1 md:flex-col md:justify-start md:gap-5 md:overflow-visible md:px-0 md:pb-0">
-        
-        <NavButton
-          active={activeTab === "live"}
-          onClick={() => navigate("live")}
-          icon={<Camera />}
-          label="Live"
-        />
-
-        <NavButton
-          active={activeTab === "drills"}
-          onClick={() => navigate("drills")}
-          icon={<BookOpen />}
-          label="Drills"
-        />
-
-        <NavButton
-          active={isGamesGroupActive}
-          onClick={() => {
-            setGamesOpen((open) => !open);
-            navigate("games");
-          }}
-          icon={<Swords />}
-          label="Games"
-        />
-
-        <NavButton
-          active={activeTab === "stats"}
-          onClick={() => navigate("stats")}
-          icon={<LayoutDashboard />}
-          label="Stats"
-        />
-
-        <NavButton
-          active={activeTab === "coach"}
-          onClick={() => navigate("coach")}
-          icon={<Brain />}
-          label="Coach AI"
-        />
-
-        <NavButton
-          active={activeTab === "history"}
-          onClick={() => navigate("history")}
-          icon={<History />}
-          label="History"
-        />
-
-        <NavButton
-          active={activeTab === "profile"}
-          onClick={() => navigate("profile")}
-          icon={<UserRound />}
-          label="Profil"
-        />
-      </div>
-
-      {showGamesSubmenu && (
-        <div className="mt-2 flex w-full justify-end md:mt-0 md:justify-center">
-          <div className="flex max-w-full flex-row gap-1 overflow-x-auto rounded-xl border border-white/5 bg-black/35 p-1 shadow-lg shadow-black/20 md:-mt-3 md:flex-col md:gap-1 md:overflow-visible md:rounded-2xl">
-            <SubNavButton active={activeTab === "games"} onClick={() => navigate("games")} icon={<Swords />} label="Match" />
-            <SubNavButton active={activeTab === "friends"} onClick={() => navigate("friends")} icon={<UsersRound />} label="Amis" />
-            <SubNavButton active={activeTab === "teams"} onClick={() => navigate("teams")} icon={<Shield />} label="Equipe" />
-            <SubNavButton active={activeTab === "leaderboard"} onClick={() => navigate("leaderboard")} icon={<Trophy />} label="Rank" />
-            <SubNavButton active={activeTab === "notifications"} onClick={() => navigate("notifications")} icon={<Bell />} label="Alertes" />
-            <ChevronDown className="hidden self-center text-white/20 md:block" size={12} />
-          </div>
+        <div className="space-y-1">
+          {primaryItems.map((item, index) => (
+            <div key={`${item.label}-${index}`}>
+              <SideItem active={activeTab === item.tab && !item.indent} indent={item.indent} onClick={() => navigate(item.tab)} icon={item.icon} label={item.label} />
+            </div>
+          ))}
         </div>
-      )}
 
-      {/* SETTINGS */}
-      <div className="mt-auto hidden md:flex pb-4">
-        <NavButton
-          active={false}
-          icon={<Settings />}
-          label="Settings"
-          onClick={() => {}}
-        />
-      </div>
-    </nav>
+        <SideGroup>
+          {secondaryItems.map((item) => (
+            <div key={item.label}>
+              <SideItem active={activeTab === item.tab} onClick={() => navigate(item.tab)} icon={item.icon} label={item.label} />
+            </div>
+          ))}
+        </SideGroup>
+
+        <SideGroup>
+          {tertiaryItems.map((item) => (
+            <div key={item.label}>
+              <SideItem active={activeTab === item.tab} onClick={() => navigate(item.tab)} icon={item.icon} label={item.label} />
+            </div>
+          ))}
+        </SideGroup>
+
+        <SideGroup>
+          <SideItem active={false} onClick={() => navigate("profile")} icon={<Settings size={17} />} label="Paramètres" />
+          <SideItem active={false} onClick={() => undefined} icon={<LogOut size={17} />} label="Déconnexion" />
+        </SideGroup>
+
+        <div className="mt-auto rounded-md border border-white/10 bg-white/[0.03] p-3">
+          <div className="text-[10px] font-bold uppercase text-white/45">Prochaine séance</div>
+          <div className="mt-3 text-xs text-white">Entraînement tir</div>
+          <div className="mt-1 text-[11px] text-white/55">Aujourd'hui · 16:00</div>
+          <button className="mt-3 w-full rounded-md border border-white/10 px-3 py-2 text-xs font-bold text-white hover:border-[#ff6b00]/60">Voir le plan</button>
+        </div>
+
+        <div className="mt-6">
+          <img src={basketMotionAiLogo} alt="BasketMotion AI" className="h-auto w-[118px] object-contain" />
+          <p className="mt-2 text-xs italic text-white/75">Be you, be different.</p>
+        </div>
+      </aside>
+
+      <nav className="fixed inset-x-0 bottom-0 z-50 grid h-[72px] grid-cols-5 border-t border-white/10 bg-[#071019]/95 px-2 pb-2 pt-1 backdrop-blur md:hidden">
+        {mobileItems.map((item) => (
+          <button key={item.label} onClick={() => navigate(item.tab)} className={cn("flex flex-col items-center justify-center gap-1 text-[10px] font-semibold", activeTab === item.tab ? "text-[#ff6b00]" : "text-white/70")}>
+            {item.icon}
+            <span>{item.label}</span>
+          </button>
+        ))}
+      </nav>
+    </>
   );
 }
 
-function SubNavButton({ active, icon, label, onClick }: { active: boolean; icon: React.ReactNode; label: string; onClick: () => void }) {
+function SideGroup({ children }: { children: ReactNode }) {
+  return <div className="mt-4 space-y-1 border-t border-white/10 pt-4">{children}</div>;
+}
+
+function SideItem({ active, icon, indent, label, onClick }: { active: boolean; icon: ReactNode; indent?: boolean; label: string; onClick: () => void }) {
   return (
     <button
       onClick={onClick}
       className={cn(
-        "flex items-center justify-center rounded-xl p-2 transition md:flex-col md:gap-1",
-        active ? "bg-brand-orange/15 text-brand-orange" : "text-white/35 hover:bg-white/5 hover:text-white",
+        "flex h-9 w-full items-center gap-3 rounded-md px-3 text-left text-[13px] transition",
+        indent && "h-7 pl-6 text-[12px]",
+        active ? "border border-[#ff6b00]/50 bg-[#ff6b00]/22 text-white" : "text-white/76 hover:bg-white/[0.05] hover:text-white",
       )}
-      title={label}
     >
-      <span>{React.cloneElement(icon as React.ReactElement, { size: 17 } as any)}</span>
-      <span className="hidden text-[9px] font-black uppercase tracking-wider md:block">{label}</span>
+      <span className={cn("grid w-4 place-items-center", active ? "text-[#ff8a00]" : "text-[#ff8a00]/80")}>{icon}</span>
+      <span className="truncate">{label}</span>
     </button>
   );
 }
