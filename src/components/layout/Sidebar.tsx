@@ -1,6 +1,7 @@
 import {
   BarChart3,
   Bell,
+  Camera,
   CalendarDays,
   ChartNoAxesCombined,
   Dumbbell,
@@ -43,9 +44,10 @@ const tertiaryItems: Array<{ tab: ActiveTab; label: string; icon: ReactNode }> =
   { tab: "leaderboard", label: "Classements", icon: <SlidersHorizontal size={17} /> },
 ];
 
-const mobileItems: Array<{ tab: ActiveTab; label: string; icon: ReactNode }> = [
+const mobileItems: Array<{ tab: ActiveTab; label: string; icon: ReactNode; featured?: boolean }> = [
   { tab: "stats", label: "Accueil", icon: <Home size={21} /> },
   { tab: "history", label: "Analyses", icon: <FileSearch size={21} /> },
+  { tab: "live", label: "Vidéo", icon: <Camera size={22} />, featured: true },
   { tab: "profile", label: "Athlètes", icon: <UserRound size={21} /> },
   { tab: "drills", label: "Entraînement", icon: <CalendarDays size={21} /> },
   { tab: "coach", label: "Menu", icon: <Menu size={21} /> },
@@ -119,10 +121,21 @@ export default function Sidebar({
         </div>
       </aside>
 
-      <nav className="fixed inset-x-0 bottom-0 z-50 grid h-[72px] grid-cols-5 border-t border-white/10 bg-[#071019]/95 px-2 pb-2 pt-1 backdrop-blur md:hidden">
+      <nav className="fixed inset-x-0 bottom-0 z-50 grid h-[78px] grid-cols-6 border-t border-white/10 bg-[#071019]/95 px-1 pb-2 pt-1 backdrop-blur md:hidden">
         {mobileItems.map((item) => (
-          <button key={item.label} onClick={() => navigate(item.tab)} className={cn("flex flex-col items-center justify-center gap-1 text-[10px] font-semibold", activeTab === item.tab ? "text-[#ff6b00]" : "text-white/70")}>
-            {item.icon}
+          <button
+            key={item.label}
+            onClick={() => navigate(item.tab)}
+            className={cn(
+              "flex flex-col items-center justify-center gap-1 text-[10px] font-semibold",
+              item.featured && "-mt-4",
+              activeTab === item.tab ? "text-[#ff6b00]" : "text-white/70",
+            )}
+            title={item.featured ? "Nouvelle analyse vidéo" : item.label}
+          >
+            <span className={cn(item.featured && "grid h-12 w-12 place-items-center rounded-full border border-[#ff8a00]/60 bg-gradient-to-br from-[#ff4d00] to-[#ff8a00] text-white shadow-lg shadow-[#ff6b00]/30")}>
+              {item.icon}
+            </span>
             <span>{item.label}</span>
           </button>
         ))}
