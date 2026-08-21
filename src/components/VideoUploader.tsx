@@ -1,4 +1,4 @@
-import { AlertCircle, Upload, Wand2, X } from "lucide-react";
+import { AlertCircle, CheckCircle2, Image as ImageIcon, ListVideo, Upload, Wand2, X } from "lucide-react";
 import { useMemo, useRef, useState } from "react";
 import type { User } from "firebase/auth";
 import { analyzeUploadedVideo, type AIAnalysisResult } from "@/src/services/aiAnalysisService";
@@ -13,9 +13,11 @@ const ACCEPTED_TYPES = ["video/mp4", "video/quicktime", "video/webm"];
 
 export default function VideoUploader({
   user,
+  onOpenHistory,
   onSaved,
 }: {
   user: User | null;
+  onOpenHistory?: () => void;
   onSaved?: () => void;
 }) {
   const inputRef = useRef<HTMLInputElement | null>(null);
@@ -23,6 +25,7 @@ export default function VideoUploader({
   const [previewUrl, setPreviewUrl] = useState("");
   const [error, setError] = useState("");
   const [analysis, setAnalysis] = useState<AIAnalysisResult | null>(null);
+  const [saved, setSaved] = useState(false);
   const [progress, setProgress] = useState(0);
   const [isProcessing, setIsProcessing] = useState(false);
 
@@ -37,6 +40,7 @@ export default function VideoUploader({
     setPreviewUrl("");
     setError("");
     setAnalysis(null);
+    setSaved(false);
     setProgress(0);
   };
 
@@ -58,6 +62,7 @@ export default function VideoUploader({
     if (!nextFile) return;
     setError("");
     setAnalysis(null);
+    setSaved(false);
 
     if (!ACCEPTED_TYPES.includes(nextFile.type)) {
       setError("Unsupported format. Use MP4, MOV, or WebM.");
@@ -98,6 +103,7 @@ export default function VideoUploader({
         shotAnalysis: result.shotAnalysis,
         onProgress: setProgress,
       });
+      setSaved(true);
       onSaved?.();
     } catch (uploadError) {
       console.error(uploadError);
@@ -108,16 +114,16 @@ export default function VideoUploader({
   };
 
   return (
-    <div className="space-y-4 rounded-2xl border border-white/10 bg-brand-surface/70 p-5">
+    <div className="bm-card space-y-4 p-5">
       <div className="flex items-start justify-between gap-4">
         <div>
-          <div className="flex items-center gap-2 text-xs font-black uppercase tracking-widest text-brand-orange">
-            <Upload size={16} /> Upload Video
+          <div className="flex items-center gap-2 text-xs font-black uppercase tracking-widest text-[#ff8a00]">
+            <Upload size={16} /> Nouvelle analyse vidéo
           </div>
-          <p className="mt-2 text-sm text-white/50">{helperText}</p>
+          <p className="mt-2 text-sm text-white/55">{helperText}</p>
         </div>
         {file && (
-          <button onClick={reset} className="rounded-xl border border-white/10 p-2 text-white/50 hover:bg-white/10">
+          <button onClick={reset} className="rounded-md border border-white/10 p-2 text-white/50 hover:bg-white/10">
             <X size={16} />
           </button>
         )}
@@ -132,38 +138,65 @@ export default function VideoUploader({
       />
 
       {previewUrl ? (
-        <video src={previewUrl} controls playsInline className="aspect-video w-full rounded-xl bg-black object-contain" />
+        <div className="relative overflow-hidden rounded-md border border-white/10 bg-black">
+          <video src={previewUrl} controls playsInline className="aspect-video w-full bg-black object-contain" />
+          <div className="absolute left-3 top-3 rounded-md border border-white/10 bg-black/65 px-2 py-1 text-[10px] font-black uppercase tracking-widest text-white/70 backdrop-blur">
+            Aperçu vidéo
+          </div>
+        </div>
       ) : (
         <button
           onClick={() => inputRef.current?.click()}
-          className="flex aspect-video w-full flex-col items-center justify-center rounded-xl border border-dashed border-white/15 bg-black/25 text-white/45 transition hover:border-brand-orange/60 hover:text-white"
+          className="flex aspect-video w-full flex-col items-center justify-center rounded-md border border-dashed border-white/15 bg-black/25 text-white/45 transition hover:border-[#ff8a00]/70 hover:text-white"
         >
-          <Upload size={34} className="mb-3 text-brand-orange" />
-          Select training video
+          <ImageIcon size={34} className="mb-3 text-[#ff8a00]" />
+          <span className="font-black uppercase">Choisir une vidéo</span>
+          <span className="mt-1 text-xs text-white/35">L'aperçu apparaîtra ici avant l'analyse</span>
         </button>
       )}
 
       {error && (
-        <div className="flex items-center gap-2 rounded-xl border border-red-500/20 bg-red-500/10 p-3 text-sm text-red-200">
+        <div className="flex items-center gap-2 rounded-md border border-red-500/20 bg-red-500/10 p-3 text-sm text-red-200">
           <AlertCircle size={16} /> {error}
         </div>
       )}
 
       {progress > 0 && (
-        <div className="h-2 overflow-hidden rounded-full bg-white/10">
-          <div className="h-full bg-brand-neon transition-all" style={{ width: `${progress}%` }} />
+        <div>
+          <div className="mb-1 flex items-center justify-between text-[10px] font-black uppercase tracking-widest text-white/50">
+            <span>Sauvegarde</span>
+            <span className="text-[#21e58b]">{progress}%</span>
+          </div>
+          <div className="h-2 overflow-hidden rounded-full bg-white/10">
+            <div className="h-full bg-[#21e58b] transition-all" style={{ width: `${progress}%` }} />
+          </div>
         </div>
       )}
 
       <button
         onClick={file ? analyzeAndSave : () => inputRef.current?.click()}
         disabled={isProcessing || !user}
-        className="flex w-full items-center justify-center gap-2 rounded-xl bg-brand-orange px-4 py-3 text-sm font-black uppercase tracking-wider text-white transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50"
+        className="flex w-full items-center justify-center gap-2 rounded-md bg-gradient-to-r from-[#ff4d00] to-[#ff8a00] px-4 py-3 text-sm font-black uppercase tracking-wider text-white transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50"
       >
-        <Wand2 size={17} /> {isProcessing ? `Uploading ${progress}%` : file ? "Analyze & Save" : "Choose Video"}
+        <Wand2 size={17} /> {isProcessing ? `Analyse ${progress}%` : file ? "Analyser et sauvegarder" : "Uploader une vidéo"}
       </button>
 
-      {analysis && <AIAnalyticsPanel analysis={analysis} />}
+      {saved && (
+        <div className="rounded-md border border-[#21e58b]/20 bg-[#21e58b]/10 p-3">
+          <div className="flex items-center gap-2 text-sm font-black text-[#21e58b]">
+            <CheckCircle2 size={17} /> Analyse sauvegardée
+          </div>
+          <p className="mt-1 text-xs text-white/55">Tu peux maintenant ouvrir la liste des analyses pour voir l'image/aperçu et le rapport détaillé.</p>
+          <button
+            onClick={onOpenHistory}
+            className="mt-3 inline-flex items-center gap-2 rounded-md border border-white/10 bg-white/[0.04] px-3 py-2 text-xs font-black uppercase text-white hover:border-[#ff8a00]/60"
+          >
+            <ListVideo size={15} /> Voir la liste des analyses
+          </button>
+        </div>
+      )}
+
+      {analysis && <div className="bm-card p-3"><AIAnalyticsPanel analysis={analysis} /></div>}
     </div>
   );
 }

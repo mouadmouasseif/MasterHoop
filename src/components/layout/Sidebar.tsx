@@ -44,10 +44,9 @@ const tertiaryItems: Array<{ tab: ActiveTab; label: string; icon: ReactNode }> =
   { tab: "leaderboard", label: "Classements", icon: <SlidersHorizontal size={17} /> },
 ];
 
-const mobileItems: Array<{ tab: ActiveTab; label: string; icon: ReactNode; featured?: boolean }> = [
+const mobileItems: Array<{ tab: ActiveTab; label: string; icon: ReactNode }> = [
   { tab: "stats", label: "Accueil", icon: <Home size={21} /> },
   { tab: "history", label: "Analyses", icon: <FileSearch size={21} /> },
-  { tab: "live", label: "Vidéo", icon: <Camera size={22} />, featured: true },
   { tab: "profile", label: "Athlètes", icon: <UserRound size={21} /> },
   { tab: "drills", label: "Entraînement", icon: <CalendarDays size={21} /> },
   { tab: "coach", label: "Menu", icon: <Menu size={21} /> },
@@ -121,24 +120,31 @@ export default function Sidebar({
         </div>
       </aside>
 
-      <nav className="fixed inset-x-0 bottom-0 z-50 grid h-[78px] grid-cols-6 border-t border-white/10 bg-[#071019]/95 px-1 pb-2 pt-1 backdrop-blur md:hidden">
+      <nav className="fixed inset-x-0 bottom-0 z-50 grid h-[76px] grid-cols-5 border-t border-white/10 bg-[#071019]/95 px-2 pb-2 pt-1 backdrop-blur md:hidden">
         {mobileItems.map((item) => (
           <button
             key={item.label}
             onClick={() => navigate(item.tab)}
             className={cn(
               "flex flex-col items-center justify-center gap-1 text-[10px] font-semibold",
-              item.featured && "-mt-4",
               activeTab === item.tab ? "text-[#ff6b00]" : "text-white/70",
             )}
-            title={item.featured ? "Nouvelle analyse vidéo" : item.label}
+            title={item.label}
           >
-            <span className={cn(item.featured && "grid h-12 w-12 place-items-center rounded-full border border-[#ff8a00]/60 bg-gradient-to-br from-[#ff4d00] to-[#ff8a00] text-white shadow-lg shadow-[#ff6b00]/30")}>
-              {item.icon}
-            </span>
+            {item.icon}
             <span>{item.label}</span>
           </button>
         ))}
+        <button
+          onClick={() => navigate("live")}
+          className="absolute left-1/2 top-0 flex -translate-x-1/2 -translate-y-1/2 flex-col items-center gap-1 text-[10px] font-black text-white"
+          title="Nouvelle analyse vidéo"
+        >
+          <span className={cn("grid h-14 w-14 place-items-center rounded-full border border-[#ffb15c]/70 bg-gradient-to-br from-[#ff4d00] to-[#ff8a00] shadow-xl shadow-[#ff6b00]/35", activeTab === "live" && "ring-4 ring-[#ff6b00]/20")}>
+            <Camera size={25} />
+          </span>
+          <span className="rounded-full bg-[#071019] px-2 py-0.5 text-[#ff8a00]">Vidéo</span>
+        </button>
       </nav>
     </>
   );

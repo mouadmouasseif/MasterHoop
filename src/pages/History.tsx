@@ -73,13 +73,13 @@ export default function History({ user, refreshKey = 0 }: { user: User | null; r
       initial={{ opacity: 0, y: 16 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -16 }}
-      className="space-y-6"
+      className="bm-analysis min-h-screen space-y-6 p-3 text-white md:p-5"
     >
       <div className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
         <div>
           <div className="mb-2 text-xs font-black uppercase tracking-[0.24em] text-brand-orange">Analyses</div>
-          <h2 className="text-3xl font-black uppercase">Bibliotheque d'analyses</h2>
-          <p className="mt-2 text-sm text-white/50">Toutes les analyses sauvegardees depuis la base BasketMotion AI. Ouvre une ligne pour entrer dans le dashboard detaille.</p>
+          <h2 className="text-3xl font-black uppercase">Bibliothèque d'analyses</h2>
+          <p className="mt-2 text-sm text-white/50">Toutes les analyses sauvegardées depuis BasketMotion AI. Ouvre une ligne pour entrer dans le dashboard détaillé.</p>
         </div>
         <div className="flex flex-wrap gap-2">
           <button onClick={() => exportProfessionalPdf({ sessions, recommendations })} className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-xs font-black"><Printer size={15} /> PDF</button>
@@ -95,7 +95,7 @@ export default function History({ user, refreshKey = 0 }: { user: User | null; r
         <LibraryMetric label="Score moyen" value={totals.averageScore === null ? "Non disponible" : `${totals.averageScore}/100`} />
       </section>
 
-      <section className="glass-card p-4">
+      <section className="bm-card p-4">
         <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
           <div className="relative min-w-0 flex-1">
             <Search className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-white/35" size={17} />
@@ -128,30 +128,30 @@ export default function History({ user, refreshKey = 0 }: { user: User | null; r
       </section>
 
       {loading ? (
-        <div className="glass-card p-10 text-center text-white/45">Loading sessions...</div>
+        <div className="bm-card p-10 text-center text-white/45">Chargement des analyses...</div>
       ) : filteredSessions.length > 0 ? (
         <AnalysisLibrary sessions={filteredSessions} onOpen={(session) => navigate(`/app/analyse/${session.id}`)} />
       ) : (
-        <div className="glass-card flex flex-col items-center justify-center p-16 text-center text-white/45">
+        <div className="bm-card flex flex-col items-center justify-center p-16 text-center text-white/45">
           <Video size={56} className="mb-5 text-white/20" />
-          Aucune analyse trouvee. Lance une analyse live ou upload une video de match pour alimenter cette liste.
+          Aucune analyse trouvée. Lance une analyse live ou upload une vidéo pour alimenter cette liste.
         </div>
       )}
 
-      <div className="glass-card max-w-full overflow-hidden p-6">
-        <div className="mb-4 flex items-center gap-2 text-xl font-black uppercase"><Share2 className="text-brand-orange" /> Videos synchronisees</div>
+      <div className="bm-card max-w-full overflow-hidden p-6">
+        <div className="mb-4 flex items-center gap-2 text-xl font-black uppercase"><Share2 className="text-brand-orange" /> Vidéos synchronisées</div>
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {sharedVideos.map((item) => (
-            <div key={item.id} className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
+            <div key={item.id} className="rounded-md border border-white/10 bg-white/[0.03] p-4">
               <div className="font-black">{item.matchId ? `Match ${item.matchId.slice(0, 8)}` : "Video Session"}</div>
               <div className="mt-1 text-xs text-white/40">{(item.participantUids || []).length} participant(s)</div>
-              <div className="mt-3 text-xs text-brand-neon">Video, analyse IA, rapport et statistiques disponibles pour chaque membre.</div>
+              <div className="mt-3 text-xs text-brand-neon">Vidéo, analyse IA, rapport et statistiques disponibles pour chaque membre.</div>
               {item.videoUrl && (
-                <video src={item.videoUrl} controls className="mt-4 aspect-video w-full rounded-xl bg-black object-cover" />
+                <video src={item.videoUrl} controls className="mt-4 aspect-video w-full rounded-md bg-black object-cover" />
               )}
             </div>
           ))}
-          {sharedVideos.length === 0 && <div className="text-sm text-white/45">Aucune video partagee pour le moment.</div>}
+          {sharedVideos.length === 0 && <div className="text-sm text-white/45">Aucune vidéo partagée pour le moment.</div>}
         </div>
       </div>
     </motion.div>
@@ -160,7 +160,7 @@ export default function History({ user, refreshKey = 0 }: { user: User | null; r
 
 function AnalysisLibrary({ sessions, onOpen }: { sessions: TrainingSession[]; onOpen: (session: TrainingSession) => void }) {
   return (
-    <div className="glass-card overflow-hidden">
+    <div className="bm-card overflow-hidden">
       <div className="grid grid-cols-[1fr_auto] gap-3 border-b border-white/10 px-4 py-3 md:grid-cols-[1.35fr_0.8fr_0.7fr_0.8fr_auto]">
         <div className="text-[10px] font-black uppercase tracking-widest text-white/35">Analyse</div>
         <div className="hidden text-[10px] font-black uppercase tracking-widest text-white/35 md:block">Date</div>
@@ -181,9 +181,11 @@ function AnalysisLibrary({ sessions, onOpen }: { sessions: TrainingSession[]; on
           return (
             <article key={session.id} className="grid grid-cols-[1fr_auto] gap-3 px-4 py-4 transition hover:bg-white/[0.03] md:grid-cols-[1.35fr_0.8fr_0.7fr_0.8fr_auto] md:items-center">
               <div className="flex min-w-0 items-center gap-3">
-                <div className="relative h-16 w-24 shrink-0 overflow-hidden rounded-xl bg-black">
+                <div className="relative h-16 w-24 shrink-0 overflow-hidden rounded-md bg-black">
                   {session.thumbnailUrl ? (
                     <img src={session.thumbnailUrl} alt="" className="h-full w-full object-cover" />
+                  ) : session.videoUrl ? (
+                    <video src={session.videoUrl} muted preload="metadata" className="h-full w-full object-cover" />
                   ) : (
                     <div className="flex h-full items-center justify-center text-white/25"><Play size={22} /></div>
                   )}
@@ -192,12 +194,12 @@ function AnalysisLibrary({ sessions, onOpen }: { sessions: TrainingSession[]; on
                   </div>
                 </div>
                 <div className="min-w-0">
-                  <div className="truncate font-black uppercase">{session.drillName || "Analyse video"}</div>
+                  <div className="truncate font-black uppercase">{session.drillName || "Analyse vidéo"}</div>
                   <div className="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-xs text-white/45">
                     <span>{session.playerName || "Athlete non disponible"}</span>
                     <span className="inline-flex items-center gap-1"><Target size={12} /> {shotTypeLabel(session)}</span>
                   </div>
-                  <p className="mt-1 line-clamp-1 text-xs text-white/35">{session.aiFeedback || "Resume IA non disponible"}</p>
+                  <p className="mt-1 line-clamp-1 text-xs text-white/35">{session.aiFeedback || "Résumé IA non disponible"}</p>
                 </div>
               </div>
 
@@ -214,7 +216,7 @@ function AnalysisLibrary({ sessions, onOpen }: { sessions: TrainingSession[]; on
               </div>
               <button
                 onClick={() => onOpen(session)}
-                className="inline-flex h-11 items-center gap-2 self-center rounded-xl bg-brand-orange px-3 text-xs font-black uppercase text-white transition hover:brightness-110"
+                className="inline-flex h-11 items-center gap-2 self-center rounded-md bg-gradient-to-r from-[#ff4d00] to-[#ff8a00] px-3 text-xs font-black uppercase text-white transition hover:brightness-110"
               >
                 Ouvrir <ArrowRight size={15} />
               </button>
@@ -228,7 +230,7 @@ function AnalysisLibrary({ sessions, onOpen }: { sessions: TrainingSession[]; on
 
 function LibraryMetric({ label, value }: { label: string; value: string }) {
   return (
-    <div className="glass-card p-4">
+    <div className="bm-card p-4">
       <div className="text-[10px] font-black uppercase tracking-widest text-white/35">{label}</div>
       <div className="mt-2 text-2xl font-black text-white">{value}</div>
     </div>

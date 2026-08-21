@@ -1,5 +1,6 @@
 import { AnimatePresence, motion } from "motion/react";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 import {
   Activity,
@@ -34,6 +35,7 @@ import {
 } from "@/src/services/trainingMissionService";
 
 export default function LiveTraining(props: any) {
+  const navigate = useNavigate();
   const {
     isImmersive = false,
     setIsImmersive = () => {},
@@ -393,7 +395,7 @@ export default function LiveTraining(props: any) {
           </div>
         )}
 
-        <VideoUploader user={user} onSaved={onSessionSaved} />
+        <VideoUploader user={user} onSaved={onSessionSaved} onOpenHistory={() => navigate("/app/analyse")} />
 
         <div className="glass-card p-6">
           <h3 className="font-bold mb-4">Live Analysis</h3>
